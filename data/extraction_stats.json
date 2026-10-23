@@ -1,0 +1,8 @@
+{
+  "inception_lbp": {
+    "mean_extract_ms": 248.1293386325035
+  },
+  "vgg16": {
+    "mean_extract_ms": 304.76397130000606
+  }
+}

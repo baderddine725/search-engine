@@ -1,0 +1,53 @@
+
+services:
+  # ----- Elasticsearch 7.17 + Elastiknn -----
+  elasticsearch:
+    build: ./elasticsearch
+    image: search-engine-elasticsearch:7.17.9
+    container_name: es-search-engine
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # ----- Backend Flask -----
+  backend:
+    build: ./backend
+    container_name: backend-search-engine
+    environment:
+      - ES_HOST=elasticsearch
+      - ES_PORT=9200
+      - DATA_DIR=/app/data
+      - FLASK_DEBUG=0
+      - PYTHONPATH=/app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+      - ./scripts:/scripts
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  # ----- Frontend Streamlit -----
+  frontend:
+    build: ./frontend
+    container_name: frontend-search-engine
+    environment:
+      - API_URL=http://backend:5000
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+
+volumes:
+  es_data:
