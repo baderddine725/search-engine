@@ -331,7 +331,13 @@ def page_text_search():
     for i, r in enumerate(data["results"]):
         with cols[i % 4]:
             with st.container(border=True):
-                st.image(r["url"], use_container_width=True)
+                # Base locale (synthétique) → /images/<path>, sinon URL Flickr
+                img_src = (f"{API_URL}/images/{r['image_path']}"
+                           if r.get("image_path") else r.get("url", ""))
+                try:
+                    st.image(img_src, use_container_width=True)
+                except Exception:
+                    st.caption(img_src)
                 st.markdown(f"**{r.get('title') or 'Sans titre'}**")
                 hl = r.get("highlight", {})
                 snippet = (hl.get("description") or hl.get("tags") or [""])[0]
@@ -661,6 +667,231 @@ docker exec backend-search-engine python /scripts/evaluate.py
 
 
 # ======================================================================
+# Descripteurs classiques + VP-Tree
+# ======================================================================
+
+@st.cache_data(ttl=120)
+def get_descriptors():
+    try:
+        return api("GET", "/descriptors")
+    except Exception:
+        return {"available": [], "descriptors": {}, "all": {}}
+
+
+def page_descriptor_search():
+    st.header("🎨 Recherche par descripteurs (VP-Tree)")
+    st.caption("Descripteurs classiques (couleur, texture, forme), partition métrique de "
+               "l'espace des index par VP-Tree. L'utilisateur choisit un ou plusieurs "
+               "descripteurs et leurs poids.")
+
+    desc = get_descriptors()
+    if not desc["available"]:
+        st.warning("Aucun index de descripteurs n'est encore construit. "
+                   "Exécutez `scripts/build_descriptors.py` dans le conteneur backend.")
+        return
+
+    st.subheader("1. Choix des descripteurs")
+    cols = st.columns(len(desc["available"]))
+    chosen, weights = [], []
+    for col, name in zip(cols, desc["available"]):
+        meta = desc["descriptors"][name]
+        with col.container(border=True):
+            enable = st.checkbox(meta["label"], value=(name == "color"), key=f"desc-{name}")
+            st.caption(meta["description"])
+            w = st.slider("Poids", 0.0, 2.0, 1.0, 0.1, key=f"w-{name}",
+                          disabled=not enable)
+            if enable:
+                chosen.append(name)
+                weights.append(w)
+    if not chosen:
+        st.info("Cochez au moins un descripteur.")
+        return
+
+    st.subheader("2. Image requête")
+    q_kind, q_val, q_class = query_picker("desc-pick")
+    size = st.slider("Nombre de résultats", 1, 50, 10, key="desc-size")
+    exact = st.toggle("Recherche exacte (linéaire, référence)", value=False,
+                      key="desc-exact",
+                      help="Désactivée → VP-Tree avec élagage métrique.")
+    if not q_val:
+        return
+    if not st.button("Rechercher", type="primary", key="desc-go"):
+        return
+
+    extra = {"descriptors": ",".join(chosen),
+             "weights": ",".join(str(w) for w in weights),
+             "size": size, "exact": "1" if exact else "0"}
+    with st.spinner("Recherche en cours..."):
+        data = api("POST", "/search/descriptor", **request_kwargs(q_kind, q_val, extra))
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Résultats", data["count"])
+    c2.metric("Extraction", f"{data.get('extract_ms', 0):.0f} ms")
+    c3.metric("Recherche", f"{data['search_ms']:.0f} ms")
+    c4.metric("Index visité",
+              f"{data.get('candidates', 0)} points"
+              + (f"  (élagué {data['pruned_pct']:.1f} %)"
+                 if "pruned_pct" in data and data["pruned_pct"] >= 0 else ""))
+
+    image_results_grid(data["results"], query_class=q_class, key="desc-grid",
+                       on_similar=None)
+
+
+def page_combined_search():
+    st.header("🔗 Requête combinée (texte ET/OU image)")
+    st.caption("Fusion rang-réciproque entre la recherche textuelle (Elasticsearch) et "
+               "la recherche visuelle (descripteurs + VP-Tree).")
+
+    desc = get_descriptors()
+    c1, c2 = st.columns([3, 2])
+    with c1:
+        query = st.text_input("Mots-clés (facultatif)", placeholder="ex : rose pink")
+    with c2:
+        size = st.number_input("Résultats", 1, 100, 10)
+
+    use_image = st.toggle("Combiner avec une image", value=True)
+    chosen, weights = [], []
+    q_kind = q_val = q_class = None
+    if use_image:
+        if not desc["available"]:
+            st.warning("Pas d'index descripteurs disponible.")
+            use_image = False
+        else:
+            opt = st.multiselect(
+                "Descripteurs visuels",
+                options=desc["available"],
+                default=desc["available"][:1],
+                format_func=lambda n: desc["descriptors"][n]["label"],
+            )
+            chosen = opt
+            weights = [1.0] * len(opt)
+            q_kind, q_val, q_class = query_picker("combined-pick")
+
+    if not st.button("Rechercher", type="primary", key="combined-go"):
+        return
+    if not query.strip() and not (use_image and q_val):
+        st.warning("Fournissez un texte et/ou une image.")
+        return
+
+    extra = {"size": size}
+    if query.strip():
+        extra["q"] = query.strip()
+    if use_image and q_val and chosen:
+        extra["descriptors"] = ",".join(chosen)
+        extra["weights"] = ",".join(str(w) for w in weights)
+        kwargs = request_kwargs(q_kind, q_val, extra)
+    else:
+        kwargs = {"json": extra}
+
+    with st.spinner("Recherche en cours..."):
+        data = api("POST", "/search/combined", **kwargs)
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Résultats", data["count"])
+    if "text_ms" in data:
+        c2.metric("Texte", f"{data['text_ms']:.0f} ms")
+    if "visual_ms" in data:
+        c3.metric("Visuel", f"{data['visual_ms']:.0f} ms")
+
+    for r in data["results"]:
+        with st.container(border=True):
+            c1, c2 = st.columns([1, 3])
+            with c1:
+                try:
+                    st.image(f"{API_URL}/images/{r['image_path']}", width=180)
+                except Exception:
+                    pass
+            with c2:
+                st.markdown(f"**{r.get('title') or r['image_path']}**")
+                st.caption(f"Classe : `{r['class_name']}` — RRF {r['rrf_score']:.4f}")
+                if r.get("text_score") is not None:
+                    st.caption(f"BM25 : {r['text_score']:.2f}")
+                if r.get("visual_distance") is not None:
+                    st.caption(f"Distance visuelle : {r['visual_distance']:.4f}")
+                if r.get("tags"):
+                    st.markdown(" ".join(f":gray-background[{t}]"
+                                         for t in r["tags"].split()[:8]))
+
+
+# ======================================================================
+# Page MIRFLICKR-1M
+# ======================================================================
+
+@st.cache_data(ttl=60)
+def mirflickr_stats():
+    try:
+        return api("GET", "/mirflickr/stats")
+    except Exception:
+        return {"indexed_documents": 0, "mpeg7_descriptors": [], "has_text": False}
+
+
+def page_mirflickr():
+    st.header("🌐 MIRFLICKR-1M (MPEG-7)")
+    st.caption("Base de 1 million d'images Flickr avec descripteurs MPEG-7 "
+               "pré-calculés (Edge Histogram, Homogeneous Texture).")
+
+    s = mirflickr_stats()
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Documents indexés", f"{s['indexed_documents']:,}")
+    c2.metric("Descripteurs MPEG-7", ", ".join(s["mpeg7_descriptors"]) or "—")
+    c3.metric("État", "prêt" if s["has_text"] else "non indexé")
+    if not s["has_text"]:
+        st.info("Exécutez `scripts/index_mirflickr.py` dans le conteneur backend.")
+        return
+
+    tab1, tab2 = st.tabs(["Recherche textuelle", "Similarité MPEG-7"])
+    with tab1:
+        with st.form("mir-text"):
+            c1, c2 = st.columns([4, 1])
+            q = c1.text_input("Mots-clés", placeholder="ex : sunset beach",
+                              label_visibility="collapsed")
+            size = c2.number_input("Résultats", 1, 50, 12,
+                                   label_visibility="collapsed")
+            go = st.form_submit_button("Rechercher", type="primary")
+        if go and q.strip():
+            d = api("GET", "/mirflickr/search", params={"q": q, "size": size})
+            st.success(f"{d['total']:,} résultats, {d['search_ms']:.0f} ms")
+            cols = st.columns(4)
+            for i, r in enumerate(d["results"]):
+                with cols[i % 4].container(border=True):
+                    st.markdown(f"**{r['title'] or 'Sans titre'}**")
+                    st.caption(f"ID : `{r['photo_id']}` — "
+                               f"par *{r['owner'] or 'inconnu'}* · BM25 {r['score']:.2f}")
+                    tags = (r.get("tags") or "").split()[:6]
+                    if tags:
+                        st.markdown(" ".join(f":gray-background[{t}]" for t in tags))
+                    if r.get("license"):
+                        st.caption(f"Licence : {r['license']}")
+
+    with tab2:
+        c1, c2, c3 = st.columns([2, 2, 1])
+        pid = c1.number_input("photo_id MIRFLICKR", 0, 999_999, 10, step=1)
+        name = c2.selectbox(
+            "Descripteur",
+            s["mpeg7_descriptors"],
+            format_func=lambda n: ({"edge": "Edge Histogram (MPEG-7)",
+                                    "homo": "Homogeneous Texture (MPEG-7)"}
+                                   .get(n, n)),
+        )
+        size = c3.number_input("Résultats", 1, 50, 10)
+        if st.button("Rechercher voisins", type="primary", key="mir-sim"):
+            d = api("GET", "/mirflickr/similar", timeout=120,
+                    params={"photo_id": pid, "descriptor": name, "size": size})
+            index_tag = (f"VP-Tree (élagué {d['pruned_pct']:.1f} %)"
+                         if d.get("index") == "vptree"
+                         else "scan linéaire exhaustif")
+            st.success(f"{d['count']} résultats, {d['search_ms']:.0f} ms — {index_tag}")
+            cols = st.columns(4)
+            for i, r in enumerate(d["results"]):
+                with cols[i % 4].container(border=True):
+                    st.markdown(f"**{r.get('title') or 'Sans titre'}**")
+                    st.caption(f"ID : `{r['photo_id']}` · dist L1 {r['distance']:.3f}")
+                    tags = (r.get("tags") or "").split()[:6]
+                    if tags:
+                        st.markdown(" ".join(f":gray-background[{t}]" for t in tags))
+
+
+# ======================================================================
 # Navigation
 # ======================================================================
 
@@ -668,6 +899,12 @@ pages = st.navigation([
     st.Page(page_home, title="Accueil", icon="🏠", default=True),
     st.Page(page_text_search, title="Recherche textuelle", icon="📝", url_path="texte"),
     st.Page(page_image_search, title="Recherche par image", icon="🖼️", url_path="image"),
+    st.Page(page_descriptor_search, title="Descripteurs + VP-Tree", icon="🎨",
+            url_path="descripteurs"),
+    st.Page(page_combined_search, title="Requête combinée", icon="🔗",
+            url_path="combinee"),
+    st.Page(page_mirflickr, title="MIRFLICKR-1M", icon="🌐",
+            url_path="mirflickr"),
     st.Page(page_compare, title="Comparaison des modèles", icon="⚖️", url_path="comparaison"),
     st.Page(page_about, title="À propos", icon="ℹ️", url_path="a-propos"),
 ])

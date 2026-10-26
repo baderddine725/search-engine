@@ -372,3 +372,40 @@ Ajouter ici la licence du projet si celui-ci est distribué publiquement. En l'a
 **Projet :** Moteur de recherche d'images combinant recherche textuelle et recherche visuelle.
 
 **Objectif :** Comparer les performances d'une représentation InceptionV3 enrichie par LBP avec celles de VGG16, au sein d'une architecture basée sur Elasticsearch, Flask, Streamlit et Docker.
+- **Elasticsearch 7.17.9** + plugin Elastiknn 7.17.9.0 (L2 LSH et recherche exacte)
+- **InceptionV3** (TensorFlow/Keras) — vecteur CNN 2048 dims
+- **LBP** (scikit-image) — histogramme texture 10 bins
+- **VGG16** (TensorFlow/Keras) — vecteur CNN 512 dims (référence)
+- **Flask** — API REST backend
+- **Streamlit** + Altair — interface utilisateur et graphiques
+- **Docker Compose** — orchestration
+# search-engine
+
+## MIRFLICKR-1M (optionnel)
+
+Pour activer la base d'un million d'images Flickr avec les descripteurs MPEG-7
+fournis (Edge Histogram et Homogeneous Texture) :
+
+```bash
+# 1) Télécharger les archives dans data/mirflickr/
+#    (depuis http://press.liacs.nl/mirflickr/mirflickr1m.v3b/)
+#      tags.zip, license.zip,
+#      features_edgehistogram.zip, features_homogeneoustexture.zip
+
+# 2) Indexation complète (texte dans ES + MPEG-7 en memmap + VP-Tree)
+docker exec backend-search-engine python /scripts/index_mirflickr.py
+```
+
+Le script crée l'index Elasticsearch `mirflickr` (1 M documents : title, tags,
+owner, licence, URL), deux fichiers `data/mirflickr/{edge,homo}.npy`
+(float32 memmap, chargés sans copier en RAM), et deux `*_vptree.npz`
+partitionnant l'espace L1 pour la recherche k-NN rapide
+(élagage ≈ 96 % → **~50 ms** par requête sur 1 M points, vs ~3 s en scan linéaire).
+
+Routes dédiées :
+
+| Route                         | Rôle                                                  |
+|-------------------------------|-------------------------------------------------------|
+| `GET  /mirflickr/stats`       | État des index et descripteurs disponibles            |
+| `GET  /mirflickr/search?q=`   | Recherche textuelle BM25 (1 M documents)              |
+| `GET  /mirflickr/similar`     | k-NN MPEG-7 (`?photo_id=…&descriptor=edge\|homo`)     |

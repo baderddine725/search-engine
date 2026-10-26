@@ -41,6 +41,9 @@ def generate_docs(csv_path: str):
                     "server": server,
                     "secret": secret,
                     "url": url,
+                    # Si l'image est locale (bdimage/<classe>/...), on garde son
+                    # chemin pour relier la recherche textuelle à la base d'images.
+                    "image_path": row.get("image_path", ""),
                 },
             }
 

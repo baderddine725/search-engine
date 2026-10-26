@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+
+# Large regenerable data (MIRFLICKR archives + MPEG-7 memmaps)
+data/mirflickr/*.zip
+data/mirflickr/*.npy

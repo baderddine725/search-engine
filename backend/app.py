@@ -314,6 +314,233 @@ def compare():
     })
 
 
+# ------------------------------------------------------------------
+# Routes — descripteurs classiques (color / lbp / hog) + VP-Tree
+# ------------------------------------------------------------------
+
+@app.route("/descriptors", methods=["GET"])
+def descriptors_list():
+    """Descripteurs classiques disponibles (ceux dont l'index VP-Tree existe)."""
+    from descriptors import DESCRIPTORS
+    from descriptor_index import available
+    avail = available()
+    return jsonify({
+        "available": avail,
+        "descriptors": {
+            name: DESCRIPTORS[name] for name in avail
+        },
+        "all": DESCRIPTORS,
+    })
+
+
+def _descriptors_param(params: dict) -> tuple:
+    from descriptors import DESCRIPTORS
+    raw = params.get("descriptors", "")
+    if isinstance(raw, list):
+        names = [str(x).strip() for x in raw if str(x).strip()]
+    else:
+        names = [x.strip() for x in str(raw).split(",") if x.strip()]
+    if not names:
+        raise ApiError("Paramètre 'descriptors' requis (ex: color,lbp,hog).")
+    for n in names:
+        if n not in DESCRIPTORS:
+            raise ApiError(f"Descripteur inconnu : {n}")
+    weights_raw = params.get("weights", "")
+    if isinstance(weights_raw, list):
+        weights = [float(w) for w in weights_raw]
+    elif str(weights_raw).strip():
+        weights = [float(w) for w in str(weights_raw).split(",")]
+    else:
+        weights = [1.0] * len(names)
+    if len(weights) != len(names):
+        raise ApiError("'weights' doit avoir la même longueur que 'descriptors'.")
+    return names, weights
+
+
+@app.route("/search/descriptor", methods=["POST"])
+def descriptor_search():
+    """
+    Recherche k-NN par descripteurs classiques via VP-Tree.
+    Query : 'image' (upload) OU 'url' OU 'path' (image de la base).
+    Params : descriptors (ex. 'color,lbp'), weights (ex. '1,0.5'), size, exact.
+    """
+    from descriptor_index import search as desc_search
+    params = _params()
+    size = _int_param(params, "size", DEFAULT_RESULTS)
+    exact = str(params.get("exact", "0")).lower() in ("1", "true", "yes")
+    names, weights = _descriptors_param(params)
+    path = (params.get("path") or "").strip()
+    kwargs = {"descriptors": names, "weights": weights, "k": size, "exact": exact}
+    if path:
+        kwargs["image_path"] = path
+    else:
+        kwargs["image"] = _query_image(params)
+    out = desc_search(**kwargs)
+    return jsonify({"descriptors": names, "weights": weights, "exact": exact,
+                    "count": len(out["results"]), **out})
+
+
+@app.route("/search/combined", methods=["POST"])
+def combined_search():
+    """
+    Requête mixte texte + image :
+      - texte  (`q`)         : facultatif → filtre et pondère sur l'index flickrphotos
+      - visuel ('path' | 'image' | 'url') : facultatif, descripteurs choisis
+    Au moins l'un des deux est requis.
+    """
+    from descriptor_index import search as desc_search
+    params = _params()
+    size = _int_param(params, "size", DEFAULT_RESULTS)
+    q = (params.get("q") or "").strip()
+    path = (params.get("path") or "").strip()
+    has_image = bool(path) or "image" in request.files or (params.get("url") or "").strip()
+
+    if not q and not has_image:
+        raise ApiError("Fournissez 'q' et/ou une image/'path'.")
+
+    out = {"query": q or None, "size": size}
+    text_hits = []
+    if q:
+        t0 = time.perf_counter()
+        text_hits = search_text(es, q, size=max(size * 5, 50))
+        out["text_ms"] = (time.perf_counter() - t0) * 1000
+
+    img_results = []
+    if has_image:
+        names, weights = _descriptors_param(params)
+        exact = str(params.get("exact", "0")).lower() in ("1", "true", "yes")
+        kwargs = {"descriptors": names, "weights": weights,
+                  "k": max(size * 5, 50), "exact": exact}
+        if path:
+            kwargs["image_path"] = path
+        else:
+            kwargs["image"] = _query_image(params)
+        vis = desc_search(**kwargs)
+        img_results = vis["results"]
+        out.update({"descriptors": names, "weights": weights,
+                    "extract_ms": vis.get("extract_ms"),
+                    "visual_ms": vis.get("search_ms")})
+
+    # Fusion : rank-based (reciprocal rank fusion), robuste à la différence
+    # d'échelles entre score BM25 et distance L1.
+    K_RRF = 60
+    rrf: dict = {}
+    text_path = {r.get("image_path"): r for r in text_hits if r.get("image_path")}
+    for rank, r in enumerate(text_hits):
+        p = r.get("image_path")
+        if not p:
+            continue
+        rrf[p] = rrf.get(p, 0.0) + 1.0 / (K_RRF + rank + 1)
+    for rank, r in enumerate(img_results):
+        p = r.get("image_path")
+        rrf[p] = rrf.get(p, 0.0) + 1.0 / (K_RRF + rank + 1)
+    img_by_path = {r["image_path"]: r for r in img_results}
+    merged = sorted(rrf.items(), key=lambda kv: -kv[1])[:size]
+    results = []
+    for p, score in merged:
+        tr = text_path.get(p, {})
+        vr = img_by_path.get(p, {})
+        results.append({
+            "image_path": p,
+            "class_name": vr.get("class_name") or _class_of(p),
+            "rrf_score": score,
+            "text_score": tr.get("score"),
+            "visual_distance": vr.get("distance"),
+            "title": tr.get("title"),
+            "tags": tr.get("tags"),
+            "url": tr.get("url"),
+        })
+    out["count"] = len(results)
+    out["results"] = results
+    return jsonify(out)
+
+
+# ------------------------------------------------------------------
+# Routes — MIRFLICKR-1M (texte Flickr + MPEG-7)
+# ------------------------------------------------------------------
+
+MIRFLICKR_INDEX = "mirflickr"
+
+
+@app.route("/mirflickr/stats", methods=["GET"])
+def mirflickr_stats():
+    """État de l'index MIRFLICKR-1M."""
+    try:
+        from mirflickr_index import available
+        descriptors = available()
+    except Exception:
+        descriptors = []
+    docs = count(es, MIRFLICKR_INDEX)
+    return jsonify({
+        "indexed_documents": docs,
+        "mpeg7_descriptors": descriptors,
+        "has_text": docs > 0,
+    })
+
+
+@app.route("/mirflickr/search", methods=["GET"])
+def mirflickr_text_search():
+    """Recherche textuelle BM25 dans la base MIRFLICKR-1M."""
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        raise ApiError("Le paramètre 'q' est requis.")
+    size = _int_param(request.args, "size", DEFAULT_RESULTS)
+    t0 = time.perf_counter()
+    body = {
+        "size": size,
+        "query": {"multi_match": {
+            "query": q, "fields": ["title^2", "tags"], "fuzziness": "AUTO",
+        }},
+        "highlight": {"fields": {"title": {}, "tags": {}},
+                      "pre_tags": ["**"], "post_tags": ["**"]},
+    }
+    resp = es.search(index=MIRFLICKR_INDEX, body=body)
+    results = [{
+        "photo_id": h["_source"].get("photo_id"),
+        "title": h["_source"].get("title", ""),
+        "tags": h["_source"].get("tags", ""),
+        "owner": h["_source"].get("owner", ""),
+        "license": h["_source"].get("license", ""),
+        "url": h["_source"].get("url", ""),
+        "score": h["_score"],
+        "highlight": h.get("highlight", {}),
+    } for h in resp["hits"]["hits"]]
+    return jsonify({
+        "query": q, "count": len(results),
+        "total": resp["hits"]["total"]["value"],
+        "results": results,
+        "search_ms": (time.perf_counter() - t0) * 1000,
+    })
+
+
+@app.route("/mirflickr/similar", methods=["GET"])
+def mirflickr_similar():
+    """Images MIRFLICKR les plus proches d'une photo_id, par descripteur MPEG-7."""
+    from mirflickr_index import get as get_mir
+    try:
+        pid = int(request.args.get("photo_id", ""))
+    except ValueError:
+        raise ApiError("'photo_id' entier requis.")
+    name = request.args.get("descriptor", "edge")
+    if name not in ("edge", "homo"):
+        raise ApiError("'descriptor' doit être edge ou homo.")
+    size = _int_param(request.args, "size", DEFAULT_RESULTS)
+    mir = get_mir(name)
+    out = mir.search(mir.vector(pid), k=size, exclude=pid)
+    # Enrichit chaque résultat avec les métadonnées texte (une seule requête ES _mget)
+    ids = [str(r["photo_id"]) for r in out["results"]]
+    if ids:
+        docs = es.mget(index=MIRFLICKR_INDEX, body={"ids": ids})["docs"]
+        meta_by_id = {int(d["_id"]): d.get("_source", {}) for d in docs if d.get("found")}
+        for r in out["results"]:
+            m = meta_by_id.get(r["photo_id"], {})
+            r["title"] = m.get("title", "")
+            r["tags"] = m.get("tags", "")
+            r["url"] = m.get("url", f"im{r['photo_id']}.jpg")
+    return jsonify({"photo_id": pid, "descriptor": name,
+                    "count": len(out["results"]), **out})
+
+
 @app.route("/benchmark", methods=["GET"])
 def benchmark():
     """Dernier rapport d'évaluation calculé."""

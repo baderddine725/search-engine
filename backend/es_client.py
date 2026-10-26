@@ -35,6 +35,7 @@ TEXT_MAPPING = {
             "server": {"type": "keyword"},
             "secret": {"type": "keyword"},
             "url": {"type": "keyword"},
+            "image_path": {"type": "keyword"},
         }
     }
 }
@@ -136,6 +137,7 @@ def search_text(es: Elasticsearch, query: str, size: int = DEFAULT_RESULTS) -> l
             "tags": src.get("tags", ""),
             "description": src.get("description", ""),
             "url": flickr_url(src),
+            "image_path": src.get("image_path", ""),
             "score": hit["_score"],
             "highlight": hit.get("highlight", {}),
         })
