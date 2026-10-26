@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Upload, Link2, Image as ImageIcon, Database, Zap, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, Link2, Image as ImageIcon, Database, Zap, X, Globe, AlertTriangle } from 'lucide-react';
 import {
-  Search, Models, Dataset, type ModelsResponse, type ImageSearchResponse,
-  type DatasetImage, imageUrl,
+  Search, Models, Dataset, Mirflickr,
+  type ModelsResponse, type ImageSearchResponse, type DatasetImage,
+  imageUrl, mirflickrThumb,
 } from '../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { ImageCard } from '../components/ImageCard';
@@ -11,8 +13,11 @@ import { LoadingGrid } from '../components/LoadingGrid';
 import { cn, fmtMs } from '../lib/utils';
 
 type Mode = 'upload' | 'url' | 'dataset';
+type Source = 'local' | 'mirflickr';
 
 export default function VisualSearch() {
+  const nav = useNavigate();
+  const [source, setSource] = useState<Source>('local');
   const [mode, setMode] = useState<Mode>('dataset');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -25,8 +30,10 @@ export default function VisualSearch() {
   const [model, setModel] = useState<string>('inception_lbp');
   const [size, setSize] = useState(10);
   const [result, setResult] = useState<ImageSearchResponse | null>(null);
+  const [mirResult, setMirResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mirPhotoId, setMirPhotoId] = useState<string>('');
 
   useEffect(() => {
     Models.list().then(r => { setModels(r); setModel(r.default); }).catch(() => {});
@@ -47,11 +54,23 @@ export default function VisualSearch() {
 
   const run = async () => {
     try {
-      setLoading(true); setError(null); setResult(null);
-      if (mode === 'upload' && file) setResult(await Search.image(file, model, size));
-      else if (mode === 'url' && url.trim()) setResult(await Search.url(url.trim(), model, size));
-      else if (mode === 'dataset' && path) setResult(await Search.similar(path, model, size));
-      else throw new Error('Provide a query image first.');
+      setLoading(true); setError(null); setResult(null); setMirResult(null);
+      if (source === 'mirflickr') {
+        if (mode === 'dataset') {
+          const pid = Number(mirPhotoId);
+          if (!pid) throw new Error('Enter a MIRFLICKR photo_id (0 – 999,999).');
+          nav(`/mirflickr/${pid}`);
+          return;
+        }
+        if (mode === 'upload' && file) setMirResult(await Mirflickr.image(file, size));
+        else if (mode === 'url' && url.trim()) setMirResult(await Mirflickr.url(url.trim(), size));
+        else throw new Error('Provide a query image first.');
+      } else {
+        if (mode === 'upload' && file) setResult(await Search.image(file, model, size));
+        else if (mode === 'url' && url.trim()) setResult(await Search.url(url.trim(), model, size));
+        else if (mode === 'dataset' && path) setResult(await Search.similar(path, model, size));
+        else throw new Error('Provide a query image first.');
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -73,6 +92,43 @@ export default function VisualSearch() {
                   title="Visual search workspace"
                   subtitle="Provide a query image — upload, URL, or dataset pick — and retrieve
                             the visually closest images using deep features."/>
+
+      {/* Dataset toggle */}
+      <div className="card p-1.5 inline-flex gap-1">
+        {([
+          { k: 'local',     label: 'Local images',    icon: Database,
+            sub: '400 objects · InceptionV3 + LBP / VGG16' },
+          { k: 'mirflickr', label: 'MIRFLICKR-1M',    icon: Globe,
+            sub: '1,000,000 photos · MPEG-7 descriptors' },
+        ] as const).map(opt => (
+          <button key={opt.k} onClick={() => setSource(opt.k)}
+                  className={cn(
+                    'flex items-center gap-2.5 px-3.5 py-2 rounded-md text-sm font-medium transition',
+                    source === opt.k
+                      ? 'bg-ink-900 text-white dark:bg-brand-500'
+                      : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'
+                  )}>
+            <opt.icon size={14}/>
+            <span>{opt.label}</span>
+            <span className="font-mono text-[10px] opacity-70">· {opt.sub}</span>
+          </button>
+        ))}
+      </div>
+
+      {source === 'mirflickr' && (mode === 'upload' || mode === 'url') && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50/60 dark:bg-amber-500/5
+                        dark:border-amber-500/20 p-3 flex gap-2.5 text-sm text-amber-900 dark:text-amber-200">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0"/>
+          <div>
+            <b>Experimental.</b> For MIRFLICKR we compute MPEG-7 Edge Histogram
+            on the fly from your image. Our encoder isn't bit-identical with
+            the one that produced the published descriptors, so distances are
+            approximate — ranking is useful but self-queries won't return
+            themselves at zero. For reliable results, use <b>Dataset / photo_id</b>
+            or <b>Find similar</b> from a Text Search result.
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-[380px_1fr] gap-6">
         {/* Query controls */}
@@ -124,7 +180,7 @@ export default function VisualSearch() {
                      className="input mt-4"/>
             )}
 
-            {mode === 'dataset' && (
+            {mode === 'dataset' && source === 'local' && (
               <div className="mt-4 space-y-2">
                 <select value={classFilter} onChange={e => setClassFilter(e.target.value)}
                         className="input">
@@ -147,31 +203,68 @@ export default function VisualSearch() {
                 </div>
               </div>
             )}
+
+            {mode === 'dataset' && source === 'mirflickr' && (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="eyebrow block mb-1.5">photo_id</label>
+                  <input type="number" min={0} max={999999}
+                         value={mirPhotoId} onChange={e => setMirPhotoId(e.target.value)}
+                         placeholder="e.g. 700000" className="input"/>
+                </div>
+                {mirPhotoId && Number(mirPhotoId) >= 0 && Number(mirPhotoId) <= 999999 && (
+                  <div className="aspect-square rounded-md overflow-hidden
+                                  border border-ink-200 dark:border-ink-700">
+                    <img src={mirflickrThumb(Number(mirPhotoId))} alt=""
+                         className="h-full w-full object-cover"/>
+                  </div>
+                )}
+                <div className="text-xs text-ink-500">
+                  Or pick one from Text Search then press "Find similar by MPEG-7".
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="card p-4">
-            <div className="eyebrow mb-3">Model</div>
-            <div className="space-y-2">
-              {Object.entries(models?.models ?? {}).map(([k, m]) => (
-                <label key={k}
-                       className={cn(
-                         'flex items-start gap-2 p-3 rounded-lg border cursor-pointer transition',
-                         model === k ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/5'
-                                     : 'border-ink-200 dark:border-ink-700 hover:border-ink-300')}>
-                  <input type="radio" checked={model === k}
-                         onChange={() => setModel(k)}
-                         className="mt-1 accent-brand-500"/>
-                  <div>
-                    <div className="font-medium text-sm">{m.label}</div>
-                    <div className="text-[11px] text-ink-500 mt-0.5">{m.description}</div>
-                    <div className="text-[10px] font-mono text-ink-400 mt-0.5">
-                      {m.dims} dims · index {m.index}
+          {source === 'local' ? (
+            <div className="card p-4">
+              <div className="eyebrow mb-3">Model</div>
+              <div className="space-y-2">
+                {Object.entries(models?.models ?? {}).map(([k, m]) => (
+                  <label key={k}
+                         className={cn(
+                           'flex items-start gap-2 p-3 rounded-lg border cursor-pointer transition',
+                           model === k ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/5'
+                                       : 'border-ink-200 dark:border-ink-700 hover:border-ink-300')}>
+                    <input type="radio" checked={model === k}
+                           onChange={() => setModel(k)}
+                           className="mt-1 accent-brand-500"/>
+                    <div>
+                      <div className="font-medium text-sm">{m.label}</div>
+                      <div className="text-[11px] text-ink-500 mt-0.5">{m.description}</div>
+                      <div className="text-[10px] font-mono text-ink-400 mt-0.5">
+                        {m.dims} dims · index {m.index}
+                      </div>
                     </div>
-                  </div>
-                </label>
-              ))}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="card p-4">
+              <div className="eyebrow mb-2">Descriptor</div>
+              <div className="rounded-lg border border-ink-200 dark:border-ink-700 p-3">
+                <div className="font-medium text-sm">Edge Histogram</div>
+                <div className="text-[11px] text-ink-500 mt-0.5">
+                  MPEG-7 · 150 dims · linear scan on 1 M points
+                </div>
+                <div className="text-[10px] font-mono text-ink-400 mt-0.5">
+                  Homogeneous Texture (43 d · VP-Tree) is only available when
+                  the query is an indexed MIRFLICKR photo.
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="card p-4">
             <div className="flex items-center justify-between">
@@ -219,7 +312,7 @@ export default function VisualSearch() {
 
           {error && <EmptyState icon={ImageIcon} title="Search failed" body={error}/>}
           {loading && <LoadingGrid n={size > 10 ? 10 : size}/>}
-          {!loading && !error && !result &&
+          {!loading && !error && !result && !mirResult &&
             <EmptyState icon={ImageIcon} title="Pick a query image"
                         body="Choose from the dataset on the left, upload a photo, or paste an image URL,
                               then run the search."/>}
@@ -230,6 +323,30 @@ export default function VisualSearch() {
                            className={r.class_name} rank={i + 1}
                            score={r.score} distance={r.distance ?? undefined}/>
               )}
+            </div>
+          )}
+          {mirResult && !loading && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
+              {mirResult.results.map((r: any, i: number) => (
+                <button key={r.photo_id} onClick={() => nav(`/mirflickr/${r.photo_id}`)}
+                        className="card card-hover overflow-hidden group block text-left">
+                  <div className="aspect-[4/3] overflow-hidden relative bg-ink-100 dark:bg-ink-900">
+                    <img src={mirflickrThumb(r.photo_id)} alt="" loading="lazy"
+                         className="h-full w-full object-cover transition-transform
+                                    group-hover:scale-[1.02]"/>
+                    <div className="absolute top-2 left-2 chip bg-white/90 dark:bg-ink-900/80
+                                    font-mono !text-[10px]">
+                      #{i + 1} · d {r.distance.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="p-3 space-y-1">
+                    <div className="font-medium text-sm leading-tight line-clamp-2">
+                      {r.title || 'Untitled'}
+                    </div>
+                    <div className="text-[11px] font-mono text-ink-500">im{r.photo_id}</div>
+                  </div>
+                </button>
+              ))}
             </div>
           )}
         </section>

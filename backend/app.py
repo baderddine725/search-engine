@@ -542,6 +542,75 @@ def mirflickr_text_search():
     })
 
 
+def _mirflickr_query_image():
+    """Load the query image for the MIRFLICKR search routes (upload or URL)."""
+    params = _params()
+    if "image" in request.files:
+        file = request.files["image"]
+        if file.filename == "":
+            raise ApiError("Fichier vide.")
+        if not allowed_file(file.filename):
+            raise ApiError("Extension non autorisée.")
+        try:
+            return load_image_from_bytes(file.read()), None
+        except Exception:
+            raise ApiError("Image illisible.")
+    url = (params.get("url") or "").strip()
+    if url:
+        try:
+            return load_image_from_url(url), url
+        except Exception as e:
+            raise ApiError(f"Impossible de télécharger l'image : {e}")
+    raise ApiError("Fournissez une image ('image') ou une URL ('url').")
+
+
+@app.route("/mirflickr/search/image", methods=["POST"])
+def mirflickr_image_search():
+    """
+    Visual search on MIRFLICKR-1M from an uploaded image or URL.
+    The query image is converted on the fly to the chosen MPEG-7 descriptor
+    (edge is implemented; homo is not — a published image's precomputed
+    descriptor would be needed).
+    """
+    from mirflickr_index import get as get_mir
+    from mpeg7_edge import edge_histogram
+    params = _params()
+    name = params.get("descriptor", "edge")
+    if name != "edge":
+        raise ApiError("Only 'edge' supports on-the-fly extraction; "
+                       "use /mirflickr/similar with a photo_id for 'homo'.")
+    size = _int_param(params, "size", DEFAULT_RESULTS)
+
+    img, src = _mirflickr_query_image()
+    t0 = time.perf_counter()
+    q = edge_histogram(img)
+    extract_ms = (time.perf_counter() - t0) * 1000
+
+    mir = get_mir(name)
+    out = mir.search(q, k=size)
+
+    # Enrich with ES metadata (one _mget per request)
+    ids = [str(r["photo_id"]) for r in out["results"]]
+    if ids:
+        docs = es.mget(index=MIRFLICKR_INDEX, body={"ids": ids})["docs"]
+        meta_by_id = {int(d["_id"]): d.get("_source", {})
+                      for d in docs if d.get("found")}
+        for r in out["results"]:
+            m = meta_by_id.get(r["photo_id"], {})
+            r["title"] = m.get("title", "")
+            r["tags"] = m.get("tags", "")
+            r["url"] = m.get("url", f"im{r['photo_id']}.jpg")
+
+    return jsonify({
+        "descriptor": name,
+        "source": "url" if src else "upload",
+        "query_url": src,
+        "count": len(out["results"]),
+        "extract_ms": extract_ms,
+        **out,
+    })
+
+
 @app.route("/mirflickr/similar", methods=["GET"])
 def mirflickr_similar():
     """Images MIRFLICKR les plus proches d'une photo_id, par descripteur MPEG-7."""

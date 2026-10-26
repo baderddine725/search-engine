@@ -277,6 +277,20 @@ export const Mirflickr = {
     request<MirflickrTextResponse>(`/mirflickr/search${qs({ q, size })}`),
   similar: (photo_id: number, descriptor: 'edge' | 'homo', size = 10) =>
     request<any>(`/mirflickr/similar${qs({ photo_id, descriptor, size })}`),
+  image: (file: File, size = 10) => {
+    const fd = new FormData();
+    fd.append('image', file);
+    fd.append('descriptor', 'edge');
+    fd.append('size', String(size));
+    return request<any>('/mirflickr/search/image', { method: 'POST', body: fd });
+  },
+  url: (url: string, size = 10) => {
+    const fd = new FormData();
+    fd.append('url', url);
+    fd.append('descriptor', 'edge');
+    fd.append('size', String(size));
+    return request<any>('/mirflickr/search/image', { method: 'POST', body: fd });
+  },
 };
 
 export const imageUrl = (path: string) => `${API_BASE}/images/${path}`;
