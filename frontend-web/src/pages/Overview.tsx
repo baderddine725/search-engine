@@ -53,9 +53,9 @@ export default function Overview() {
     return () => { alive = false; };
   }, []);
 
+  // The two models index the same visual base, so take any one.
   const totalImages = stats
-    ? Object.values(stats.models).reduce((a, b) => a + b.images, 0) /
-      Math.max(Object.keys(stats.models).length, 1)
+    ? Math.max(0, ...Object.values(stats.models).map(m => m.images))
     : 0;
   const mapInception = bench?.models?.inception_lbp?.exact?.map;
   const latencyFromBench = bench?.models?.inception_lbp?.exact?.mean_query_ms
