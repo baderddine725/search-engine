@@ -4,6 +4,7 @@ import os
 import time
 
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 from PIL import Image
 from elasticsearch import NotFoundError
 
@@ -42,6 +43,8 @@ from feature_extractor import (
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
+# CORS ouvert : le frontend web (VisionSearch AI) tourne sur un autre port.
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Initialisation globale : chargement + préchauffage des modèles (le premier
 # appel TensorFlow est lent), pour que la première requête soit rapide.

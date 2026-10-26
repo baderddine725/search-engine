@@ -2,6 +2,13 @@ __pycache__/
 *.pyc
 .venv/
 
+# Node / Vite / nginx build artifacts
+node_modules/
+frontend-web/dist/
+frontend-web/.vite/
+frontend-web/.env.local
+*.log
+
 # Large regenerable data (MIRFLICKR archives + MPEG-7 memmaps)
 data/mirflickr/*.zip
 data/mirflickr/*.npy
