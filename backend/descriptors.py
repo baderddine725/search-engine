@@ -12,7 +12,7 @@ Descripteurs implémentés :
   - hog      : HOG agrégé en 2×2 cellules × 9 orientations (36 bins), forme
 """
 
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Optional, Tuple
 
 import numpy as np
 from PIL import Image
@@ -69,8 +69,16 @@ def color_hist(img: Image.Image) -> np.ndarray:
     return _l1_normalize(h.ravel())
 
 
-def lbp_hist(img: Image.Image) -> np.ndarray:
-    gray = np.asarray(img.convert("L").resize(RESIZE_TO))
+def lbp_hist(img: Image.Image, resize: Optional[Tuple[int, int]] = RESIZE_TO) -> np.ndarray:
+    """
+    Histogramme LBP uniforme L1-normalisé (LBP_BINS bins). Implémentation unique,
+    aussi utilisée par feature_extractor (InceptionV3 + LBP) avec resize=None,
+    c'est-à-dire en pleine résolution.
+    """
+    gray = img.convert("L")
+    if resize is not None:
+        gray = gray.resize(resize)
+    gray = np.asarray(gray)
     lbp = local_binary_pattern(gray, LBP_N_POINTS, LBP_RADIUS, method="uniform")
     hist, _ = np.histogram(
         lbp.ravel(),

@@ -1,5 +1,6 @@
 """API Flask — moteur de recherche texte + image, comparaison InceptionV3+LBP / VGG16."""
 
+import math
 import os
 import time
 
@@ -349,14 +350,19 @@ def _descriptors_param(params: dict) -> tuple:
         if n not in DESCRIPTORS:
             raise ApiError(f"Descripteur inconnu : {n}")
     weights_raw = params.get("weights", "")
-    if isinstance(weights_raw, list):
-        weights = [float(w) for w in weights_raw]
-    elif str(weights_raw).strip():
-        weights = [float(w) for w in str(weights_raw).split(",")]
-    else:
-        weights = [1.0] * len(names)
+    try:
+        if isinstance(weights_raw, list):
+            weights = [float(w) for w in weights_raw]
+        elif str(weights_raw).strip():
+            weights = [float(w) for w in str(weights_raw).split(",")]
+        else:
+            weights = [1.0] * len(names)
+    except (TypeError, ValueError):
+        raise ApiError("'weights' doit être une liste de nombres (ex: 1,0.5).")
     if len(weights) != len(names):
         raise ApiError("'weights' doit avoir la même longueur que 'descriptors'.")
+    if not all(math.isfinite(w) and w >= 0 for w in weights) or sum(weights) <= 0:
+        raise ApiError("'weights' doit contenir des nombres positifs, de somme non nulle.")
     return names, weights
 
 

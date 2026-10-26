@@ -9,8 +9,9 @@ Entrées (data/mirflickr/*.zip) :
 
 Sorties :
   - index Elasticsearch 'mirflickr' : {photo_id, title, tags, owner, url, license}
-  - data/mirflickr/edge.npy  : np.memmap float32 (N, 80)
-  - data/mirflickr/homo.npy  : np.memmap float32 (N, 62)
+  - data/mirflickr/edge.npy  : np.memmap float32 (N, 150)
+  - data/mirflickr/homo.npy  : np.memmap float32 (N, 43)
+  (dimensions détectées sur les données, écrites dans {edge,homo}.meta.json)
   - data/mirflickr/ids.npy   : np.int64 (ordre des lignes → photo_id MIRFLICKR)
   - data/mirflickr/edge_vptree.npz / homo_vptree.npz
 
@@ -35,6 +36,7 @@ sys.path.insert(0, str(HERE.parent / "backend"))
 
 from config import DATA_DIR
 from es_client import get_es
+from mirflickr_index import DIMS
 
 MIR_DIR = Path(DATA_DIR) / "mirflickr"
 MIRFLICKR_INDEX = "mirflickr"
@@ -283,10 +285,11 @@ def main():
     if "text" in steps:
         step_text(get_es())
     if "edge" in steps:
-        step_mpeg7("edge", MIR_DIR / "features_edgehistogram.zip", dims_hint=80)
+        step_mpeg7("edge", MIR_DIR / "features_edgehistogram.zip",
+                   dims_hint=DIMS["edge"])
     if "homo" in steps:
         step_mpeg7("homo", MIR_DIR / "features_homogeneoustexture.zip",
-                   dims_hint=62)
+                   dims_hint=DIMS["homo"])
     if "vptree" in steps:
         step_vptree("edge")
         step_vptree("homo")

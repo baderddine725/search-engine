@@ -5,7 +5,6 @@ import io
 import numpy as np
 import requests
 from PIL import Image
-from skimage.feature import local_binary_pattern
 from tensorflow.keras.applications import InceptionV3, VGG16
 from tensorflow.keras.applications import inception_v3, vgg16
 from tensorflow.keras.preprocessing.image import img_to_array
@@ -13,11 +12,9 @@ from tensorflow.keras.preprocessing.image import img_to_array
 from config import (
     IMG_SIZE,
     VGG16_IMG_SIZE,
-    LBP_RADIUS,
-    LBP_N_POINTS,
-    LBP_BINS,
     MODELS,
 )
+from descriptors import lbp_hist
 
 
 # ----------------------------------------------------------------------
@@ -84,16 +81,8 @@ class FeatureExtractor(BaseExtractor):
     # Extraction LBP
     # ------------------------------------------------------------------
     def _extract_lbp(self, img: Image.Image) -> np.ndarray:
-        """Retourne un histogramme LBP normalisé de dimension LBP_BINS."""
-        gray = np.array(img.convert("L"))
-        lbp = local_binary_pattern(gray, LBP_N_POINTS, LBP_RADIUS, method="uniform")
-        hist, _ = np.histogram(
-            lbp.ravel(),
-            bins=LBP_BINS,
-            range=(0, LBP_N_POINTS + 2),
-            density=True,
-        )
-        return hist.astype(np.float32)
+        """Retourne un histogramme LBP normalisé de dimension LBP_BINS (pleine résolution)."""
+        return lbp_hist(img, resize=None)
 
     # ------------------------------------------------------------------
     # Extraction combinée

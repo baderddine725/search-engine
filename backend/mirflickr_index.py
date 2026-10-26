@@ -22,8 +22,10 @@ from vptree import VPTree, linear_search
 
 MIR_DIR = Path(DATA_DIR) / "mirflickr"
 
-# Dimensions attendues (si meta.json absent)
-DIMS_HINT = {"edge": 80, "homo": 43}
+# Dimensions des descripteurs MPEG-7 fournis par MIRFLICKR-1M (une seule source
+# de vérité, partagée avec scripts/index_mirflickr.py). Le meta.json écrit à
+# l'indexation fait foi ; ces valeurs ne servent que s'il est absent.
+DIMS = {"edge": 150, "homo": 43}
 
 
 class MirflickrDescriptor:
@@ -34,8 +36,15 @@ class MirflickrDescriptor:
             meta = json.loads(meta_path.read_text())
             self.N, self.dims = int(meta["N"]), int(meta["dims"])
         else:
-            self.dims = DIMS_HINT[name]
+            self.dims = DIMS[name]
             self.N = 1_000_001
+        expected = self.N * self.dims * 4
+        actual = (MIR_DIR / f"{name}.npy").stat().st_size
+        if actual != expected:
+            raise ValueError(
+                f"{name}.npy : {actual} octets, attendu {expected} "
+                f"({self.N} × {self.dims} float32). Relancez index_mirflickr.py."
+            )
         self.X = np.memmap(MIR_DIR / f"{name}.npy", dtype=np.float32, mode="r",
                            shape=(self.N, self.dims))
         self.tree = None
