@@ -22,133 +22,76 @@ st.set_page_config(
     layout="wide",
 )
 
-st.markdown(
-    """
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-      :root {
-        --accent: #2a78d6;
-        --accent-2: #eb6834;
-        --bg-soft: #f6f7fb;
-        --card-border: rgba(60, 60, 90, 0.09);
-        --card-shadow: 0 1px 2px rgba(16,24,40,.04), 0 4px 16px rgba(16,24,40,.04);
-        --card-shadow-hover: 0 8px 32px rgba(16,24,40,.09);
-        --muted: #6b6a7a;
-      }
-      html, body, [class^="st"], [class*=" st"] { font-family: 'Inter', system-ui, sans-serif; }
-      code, pre, kbd { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+_CSS = """
+<style>
+.block-container { padding-top: 2rem; padding-bottom: 4rem; max-width: 1400px; }
 
-      .block-container { padding-top: 2rem; padding-bottom: 4rem; max-width: 1400px; }
+.hero { padding: 1.8rem 2rem; border-radius: 16px; color: #fff; margin-bottom: 1.2rem;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 55%, #5b4bd4 100%);
+        box-shadow: 0 4px 16px rgba(16,24,40,0.08); }
+.hero h1 { color:#fff; margin:0 0 .3rem 0; font-weight:700; letter-spacing:-0.02em; }
+.hero p  { color: rgba(255,255,255,0.88); margin:0; font-size:1rem; max-width:70ch; }
+.hero .badges { margin-top: .9rem; display:flex; gap:.4rem; flex-wrap:wrap; }
+.hero .badges span { background: rgba(255,255,255,0.15); color:#fff; font-size:.75rem;
+        padding:.2rem .65rem; border-radius:999px; border:1px solid rgba(255,255,255,0.22); }
 
-      /* --- Hero banner --------------------------------------------------- */
-      .hero {
-        padding: 2rem 2.2rem;
-        border-radius: 18px;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 55%, #4b6cb7 100%);
-        color: #fff;
-        box-shadow: var(--card-shadow);
-        margin-bottom: 1.4rem;
-      }
-      .hero h1 { color:#fff; margin: 0 0 .3rem 0; font-weight: 700; letter-spacing: -0.02em; }
-      .hero p  { color: rgba(255,255,255,.86); margin: 0; font-size: 1.02rem; max-width: 70ch; }
-      .hero .badges { margin-top: 1rem; display: flex; gap: .5rem; flex-wrap: wrap; }
-      .hero .badges span {
-        background: rgba(255,255,255,.14); color: #fff; font-size: .78rem;
-        padding: .22rem .65rem; border-radius: 999px; backdrop-filter: blur(4px);
-        border: 1px solid rgba(255,255,255,.18);
-      }
+div[data-testid="stVerticalBlockBorderWrapper"] {
+        border:1px solid rgba(60,60,90,0.09) !important;
+        border-radius:14px !important;
+        box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 4px 14px rgba(16,24,40,0.04);
+        transition: box-shadow .18s ease, transform .18s ease; }
+div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+        box-shadow: 0 8px 28px rgba(16,24,40,0.09);
+        transform: translateY(-1px); }
 
-      /* --- Cards --------------------------------------------------------- */
-      div[data-testid="stVerticalBlockBorderWrapper"] {
-        border: 1px solid var(--card-border) !important;
-        border-radius: 14px !important;
-        box-shadow: var(--card-shadow);
-        transition: box-shadow .18s ease, transform .18s ease;
-        overflow: hidden;
-      }
-      div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-        box-shadow: var(--card-shadow-hover);
-        transform: translateY(-1px);
-      }
+div[data-testid="stImage"] img { border-radius:10px; object-fit:cover; aspect-ratio: 4 / 3;
+        transition: transform .25s ease; }
+div[data-testid="stImage"]:hover img { transform: scale(1.015); }
 
-      /* --- Images -------------------------------------------------------- */
-      div[data-testid="stImage"] img {
-        border-radius: 10px;
-        object-fit: cover;
-        aspect-ratio: 4 / 3;
-        transition: transform .25s ease;
-      }
-      div[data-testid="stImage"]:hover img { transform: scale(1.015); }
+div[data-testid="stMetricValue"] { font-size:1.7rem; font-weight:700; color:#2a78d6; }
+div[data-testid="stMetricLabel"] { font-size:.78rem; letter-spacing:.04em;
+        text-transform:uppercase; color:#6b6a7a; font-weight:500; }
 
-      /* --- Metrics ------------------------------------------------------- */
-      div[data-testid="stMetricValue"] {
-        font-size: 1.75rem; font-weight: 700;
-        background: linear-gradient(90deg, var(--accent), #5b4bd4);
-        -webkit-background-clip: text; background-clip: text; color: transparent;
-      }
-      div[data-testid="stMetricLabel"] {
-        font-size: .78rem; letter-spacing: .04em; text-transform: uppercase;
-        color: var(--muted); font-weight: 500;
-      }
+.rc-rank { display:inline-flex; align-items:center; justify-content:center;
+        width:1.8rem; height:1.8rem; border-radius:50%;
+        background: linear-gradient(135deg, #2a78d6, #5b4bd4);
+        color:#fff; font-weight:600; font-size:.82rem; }
+.rc-rank.gold   { background: linear-gradient(135deg, #f6d365, #fda085); color:#4a3400; }
+.rc-rank.silver { background: linear-gradient(135deg, #e2e2e4, #adb5bd); color:#35363d; }
+.rc-rank.bronze { background: linear-gradient(135deg, #d4844a, #a05a1f); color:#fff; }
 
-      /* --- Result card internals ---------------------------------------- */
-      .rc-rank {
-        display: inline-flex; align-items: center; justify-content: center;
-        width: 1.8rem; height: 1.8rem; border-radius: 50%;
-        background: linear-gradient(135deg, #2a78d6, #5b4bd4); color: #fff;
-        font-weight: 600; font-size: .82rem;
-      }
-      .rc-rank.gold   { background: linear-gradient(135deg, #f6d365, #fda085); color: #4a3400; }
-      .rc-rank.silver { background: linear-gradient(135deg, #e2e2e4, #adb5bd); color: #35363d; }
-      .rc-rank.bronze { background: linear-gradient(135deg, #d4844a, #a05a1f); color: #fff; }
+.rc-chip { display:inline-block; font-size:.72rem; font-weight:600;
+        padding:.18rem .55rem; border-radius:999px; }
+.rc-chip.ok      { background:#e6f6ea; color:#216e39; border:1px solid #c6ebd0; }
+.rc-chip.miss    { background:#fde9ea; color:#a01625; border:1px solid #f3c7cb; }
+.rc-chip.neutral { background:#eef1f6; color:#3d4b63; border:1px solid #dde3ec; }
 
-      .rc-chip {
-        display: inline-block; font-size: .72rem; font-weight: 600;
-        padding: .18rem .55rem; border-radius: 999px; letter-spacing: .02em;
-      }
-      .rc-chip.ok   { background: #e6f6ea; color: #216e39; border: 1px solid #c6ebd0; }
-      .rc-chip.miss { background: #fde9ea; color: #a01625; border: 1px solid #f3c7cb; }
-      .rc-chip.neutral { background: #eef1f6; color: #3d4b63; border: 1px solid #dde3ec; }
+.rc-score-row { display:flex; align-items:center; gap:.5rem; margin-top:.35rem; }
+.rc-score-row small { color:#6b6a7a; font-variant-numeric: tabular-nums; }
+.rc-bar { flex:1; height:5px; background:#eef1f6; border-radius:999px; overflow:hidden; }
+.rc-bar > span { display:block; height:100%; border-radius:999px;
+        background: linear-gradient(90deg, #2a78d6, #5b4bd4); }
+.rc-bar.warm > span { background: linear-gradient(90deg, #eb6834, #f6a35b); }
 
-      .rc-score-row { display:flex; align-items:center; gap:.5rem; margin-top: .35rem; }
-      .rc-score-row small { color: var(--muted); font-variant-numeric: tabular-nums; }
-      .rc-bar {
-        flex: 1; height: 5px; background: #eef1f6; border-radius: 999px; overflow: hidden;
-      }
-      .rc-bar > span {
-        display:block; height:100%;
-        background: linear-gradient(90deg, var(--accent), #5b4bd4);
-        border-radius: 999px;
-      }
-      .rc-bar.warm > span { background: linear-gradient(90deg, #eb6834, #f6a35b); }
+.model-tag { display:inline-block; width:.8rem; height:.8rem; border-radius:3px;
+        margin-right:.4rem; vertical-align:-1px; }
 
-      .model-tag { display: inline-block; width: 0.8rem; height: 0.8rem;
-                   border-radius: 3px; margin-right: 0.4rem; vertical-align: -1px; }
-      .section-divider { height: 1px; background: var(--card-border);
-                         margin: 1.4rem 0 .9rem 0; border: 0; }
+div.stButton > button { border-radius:10px; font-weight:500; }
+div.stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #2a78d6, #5b4bd4); border:0;
+        box-shadow: 0 2px 8px rgba(42,120,214,0.3); }
 
-      /* --- Buttons ------------------------------------------------------- */
-      div.stButton > button {
-        border-radius: 10px; font-weight: 500; transition: all .15s ease;
-      }
-      div.stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, var(--accent), #5b4bd4); border: 0;
-        box-shadow: 0 2px 8px rgba(42,120,214,.3);
-      }
-      div.stButton > button[kind="primary"]:hover { box-shadow: 0 4px 14px rgba(42,120,214,.45); }
+.tag-pill { display:inline-block; margin:2px 3px 0 0; padding:2px 8px;
+        font-size:.72rem; background:#eef1f6; color:#3d4b63;
+        border-radius:999px; border:1px solid #e3e7ee; }
+</style>
+"""
 
-      /* --- Tag pills ----------------------------------------------------- */
-      .tag-pill {
-        display: inline-block; margin: 2px 3px 0 0;
-        padding: 2px 8px; font-size: .72rem;
-        background: #eef1f6; color: #3d4b63;
-        border-radius: 999px; border: 1px solid #e3e7ee;
-      }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# st.html keeps the block as HTML (plus sûr que st.markdown pour les gros <style>)
+try:
+    st.html(_CSS)
+except Exception:
+    st.markdown(_CSS, unsafe_allow_html=True)
 
 
 def _rank_class(i: int) -> str:
