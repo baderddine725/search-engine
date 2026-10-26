@@ -24,18 +24,146 @@ st.set_page_config(
 
 st.markdown(
     """
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-      .block-container { padding-top: 2rem; }
-      .hero h1 { margin-bottom: 0.2rem; }
-      .hero p { color: #6b6a66; margin-top: 0; font-size: 1.05rem; }
+      :root {
+        --accent: #2a78d6;
+        --accent-2: #eb6834;
+        --bg-soft: #f6f7fb;
+        --card-border: rgba(60, 60, 90, 0.09);
+        --card-shadow: 0 1px 2px rgba(16,24,40,.04), 0 4px 16px rgba(16,24,40,.04);
+        --card-shadow-hover: 0 8px 32px rgba(16,24,40,.09);
+        --muted: #6b6a7a;
+      }
+      html, body, [class^="st"], [class*=" st"] { font-family: 'Inter', system-ui, sans-serif; }
+      code, pre, kbd { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+      .block-container { padding-top: 2rem; padding-bottom: 4rem; max-width: 1400px; }
+
+      /* --- Hero banner --------------------------------------------------- */
+      .hero {
+        padding: 2rem 2.2rem;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 55%, #4b6cb7 100%);
+        color: #fff;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 1.4rem;
+      }
+      .hero h1 { color:#fff; margin: 0 0 .3rem 0; font-weight: 700; letter-spacing: -0.02em; }
+      .hero p  { color: rgba(255,255,255,.86); margin: 0; font-size: 1.02rem; max-width: 70ch; }
+      .hero .badges { margin-top: 1rem; display: flex; gap: .5rem; flex-wrap: wrap; }
+      .hero .badges span {
+        background: rgba(255,255,255,.14); color: #fff; font-size: .78rem;
+        padding: .22rem .65rem; border-radius: 999px; backdrop-filter: blur(4px);
+        border: 1px solid rgba(255,255,255,.18);
+      }
+
+      /* --- Cards --------------------------------------------------------- */
+      div[data-testid="stVerticalBlockBorderWrapper"] {
+        border: 1px solid var(--card-border) !important;
+        border-radius: 14px !important;
+        box-shadow: var(--card-shadow);
+        transition: box-shadow .18s ease, transform .18s ease;
+        overflow: hidden;
+      }
+      div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+        box-shadow: var(--card-shadow-hover);
+        transform: translateY(-1px);
+      }
+
+      /* --- Images -------------------------------------------------------- */
+      div[data-testid="stImage"] img {
+        border-radius: 10px;
+        object-fit: cover;
+        aspect-ratio: 4 / 3;
+        transition: transform .25s ease;
+      }
+      div[data-testid="stImage"]:hover img { transform: scale(1.015); }
+
+      /* --- Metrics ------------------------------------------------------- */
+      div[data-testid="stMetricValue"] {
+        font-size: 1.75rem; font-weight: 700;
+        background: linear-gradient(90deg, var(--accent), #5b4bd4);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      div[data-testid="stMetricLabel"] {
+        font-size: .78rem; letter-spacing: .04em; text-transform: uppercase;
+        color: var(--muted); font-weight: 500;
+      }
+
+      /* --- Result card internals ---------------------------------------- */
+      .rc-rank {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 1.8rem; height: 1.8rem; border-radius: 50%;
+        background: linear-gradient(135deg, #2a78d6, #5b4bd4); color: #fff;
+        font-weight: 600; font-size: .82rem;
+      }
+      .rc-rank.gold   { background: linear-gradient(135deg, #f6d365, #fda085); color: #4a3400; }
+      .rc-rank.silver { background: linear-gradient(135deg, #e2e2e4, #adb5bd); color: #35363d; }
+      .rc-rank.bronze { background: linear-gradient(135deg, #d4844a, #a05a1f); color: #fff; }
+
+      .rc-chip {
+        display: inline-block; font-size: .72rem; font-weight: 600;
+        padding: .18rem .55rem; border-radius: 999px; letter-spacing: .02em;
+      }
+      .rc-chip.ok   { background: #e6f6ea; color: #216e39; border: 1px solid #c6ebd0; }
+      .rc-chip.miss { background: #fde9ea; color: #a01625; border: 1px solid #f3c7cb; }
+      .rc-chip.neutral { background: #eef1f6; color: #3d4b63; border: 1px solid #dde3ec; }
+
+      .rc-score-row { display:flex; align-items:center; gap:.5rem; margin-top: .35rem; }
+      .rc-score-row small { color: var(--muted); font-variant-numeric: tabular-nums; }
+      .rc-bar {
+        flex: 1; height: 5px; background: #eef1f6; border-radius: 999px; overflow: hidden;
+      }
+      .rc-bar > span {
+        display:block; height:100%;
+        background: linear-gradient(90deg, var(--accent), #5b4bd4);
+        border-radius: 999px;
+      }
+      .rc-bar.warm > span { background: linear-gradient(90deg, #eb6834, #f6a35b); }
+
       .model-tag { display: inline-block; width: 0.8rem; height: 0.8rem;
                    border-radius: 3px; margin-right: 0.4rem; vertical-align: -1px; }
-      div[data-testid="stImage"] img { border-radius: 6px; object-fit: cover; aspect-ratio: 4 / 3; }
-      div[data-testid="stMetricValue"] { font-size: 1.6rem; }
+      .section-divider { height: 1px; background: var(--card-border);
+                         margin: 1.4rem 0 .9rem 0; border: 0; }
+
+      /* --- Buttons ------------------------------------------------------- */
+      div.stButton > button {
+        border-radius: 10px; font-weight: 500; transition: all .15s ease;
+      }
+      div.stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, var(--accent), #5b4bd4); border: 0;
+        box-shadow: 0 2px 8px rgba(42,120,214,.3);
+      }
+      div.stButton > button[kind="primary"]:hover { box-shadow: 0 4px 14px rgba(42,120,214,.45); }
+
+      /* --- Tag pills ----------------------------------------------------- */
+      .tag-pill {
+        display: inline-block; margin: 2px 3px 0 0;
+        padding: 2px 8px; font-size: .72rem;
+        background: #eef1f6; color: #3d4b63;
+        border-radius: 999px; border: 1px solid #e3e7ee;
+      }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+
+def _rank_class(i: int) -> str:
+    return ("gold" if i == 0 else "silver" if i == 1 else "bronze" if i == 2 else "")
+
+
+def _score_bar(score: float, warm: bool = False) -> str:
+    pct = max(0.0, min(1.0, float(score))) * 100
+    cls = "rc-bar warm" if warm else "rc-bar"
+    return f'<div class="{cls}"><span style="width:{pct:.1f}%"></span></div>'
+
+
+def _tag_pills(tags: str, limit: int = 6) -> str:
+    toks = [t for t in (tags or "").split() if t][:limit]
+    return " ".join(f'<span class="tag-pill">{t}</span>' for t in toks)
 
 
 # ======================================================================
@@ -131,6 +259,9 @@ def image_results_grid(results, query_class=None, n_cols=5, key="grid", on_simil
     if not results:
         st.info("Aucun résultat.")
         return
+    # Normalise les scores pour la barre (0..1 relative au meilleur hit)
+    scores = [float(r.get("score", 0.0) or 0.0) for r in results]
+    s_max = max(scores) or 1.0
     cols = st.columns(n_cols)
     for i, r in enumerate(results):
         with cols[i % n_cols]:
@@ -138,20 +269,32 @@ def image_results_grid(results, query_class=None, n_cols=5, key="grid", on_simil
                 show_image(r["image_path"])
                 cls = r.get("class_name", "")
                 if query_class:
-                    badge = ":green-background[✓ " + cls + "]" if cls == query_class \
-                        else ":red-background[✗ " + cls + "]"
+                    chip = (f'<span class="rc-chip ok">✓ {cls}</span>'
+                            if cls == query_class else
+                            f'<span class="rc-chip miss">✗ {cls}</span>')
                 else:
-                    badge = f":gray-background[{cls}]"
+                    chip = f'<span class="rc-chip neutral">{cls or "—"}</span>'
                 dist = r.get("distance")
+                rank_cls = _rank_class(i)
+                score = scores[i]
+                bar = _score_bar(score / s_max) if score else ""
+                dist_html = (f"<small>dist&nbsp;{dist:.3f}</small>"
+                             if dist is not None else "")
                 st.markdown(
-                    f"**#{i + 1}** {badge}  \n"
-                    f"<small>dist. L2 {dist:.2f} · score {r['score']:.3f}</small>"
-                    if dist is not None else f"**#{i + 1}** {badge}",
+                    f'<div style="display:flex;align-items:center;gap:.5rem;'
+                    f'margin-top:.4rem;flex-wrap:wrap;">'
+                    f'<span class="rc-rank {rank_cls}">{i + 1}</span>'
+                    f'{chip}'
+                    f'</div>'
+                    f'<div class="rc-score-row">{bar}'
+                    f'<small>{score:.3f}</small></div>'
+                    f'<div style="color:var(--muted);font-size:.72rem;'
+                    f'margin-top:.15rem;">{dist_html}</div>',
                     unsafe_allow_html=True,
                 )
                 if on_similar:
                     st.button(
-                        "Images similaires", key=f"{key}-sim-{i}",
+                        "🔄 Images similaires", key=f"{key}-sim-{i}",
                         on_click=on_similar, args=(r["image_path"],),
                         use_container_width=True,
                     )
@@ -233,9 +376,16 @@ def request_kwargs(kind: str, value, extra: dict):
 
 def page_home():
     st.markdown(
-        '<div class="hero"><h1>🔍 Moteur de Recherche d\'Images</h1>'
+        '<div class="hero">'
+        '<h1>🔍 Moteur de Recherche d\'Images</h1>'
         "<p>Recherche par texte (TBIR) et par contenu visuel (CBIR) sur Elasticsearch — "
-        "avec comparaison InceptionV3 + LBP vs VGG16.</p></div>",
+        "descripteurs MPEG-7 et classiques (color · LBP · HOG), partition de l'espace "
+        "des index par VP-Tree et fusion rang-réciproque texte + image.</p>"
+        '<div class="badges">'
+        '<span>Elasticsearch 7.17</span><span>Elastiknn LSH</span>'
+        '<span>VP-Tree L1</span><span>MIRFLICKR-1M</span>'
+        '<span>InceptionV3 + LBP</span><span>VGG16</span>'
+        '</div></div>',
         unsafe_allow_html=True,
     )
 
@@ -338,15 +488,26 @@ def page_text_search():
                     st.image(img_src, use_container_width=True)
                 except Exception:
                     st.caption(img_src)
-                st.markdown(f"**{r.get('title') or 'Sans titre'}**")
+                rank_cls = _rank_class(i)
+                score_norm = min(1.0, r["score"] / max(data["results"][0]["score"], 1e-6))
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;gap:.5rem;'
+                    f'margin-top:.4rem;">'
+                    f'<span class="rc-rank {rank_cls}">{i + 1}</span>'
+                    f'<strong style="line-height:1.2">{r.get("title") or "Sans titre"}</strong>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
                 hl = r.get("highlight", {})
                 snippet = (hl.get("description") or hl.get("tags") or [""])[0]
                 if snippet:
                     st.caption("…" + snippet + "…")
-                tags = (r.get("tags") or "").split()[:6]
-                if tags:
-                    st.markdown(" ".join(f":gray-background[{t}]" for t in tags))
-                st.caption(f"Score BM25 : {r['score']:.2f}")
+                st.markdown(_tag_pills(r.get("tags", "")), unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="rc-score-row">{_score_bar(score_norm, warm=True)}'
+                    f'<small>BM25&nbsp;{r["score"]:.2f}</small></div>',
+                    unsafe_allow_html=True,
+                )
 
 
 def page_image_search():
@@ -793,24 +954,43 @@ def page_combined_search():
     if "visual_ms" in data:
         c3.metric("Visuel", f"{data['visual_ms']:.0f} ms")
 
-    for r in data["results"]:
+    rrf_max = max((r.get("rrf_score") or 0.0) for r in data["results"]) or 1.0
+    for i, r in enumerate(data["results"]):
         with st.container(border=True):
-            c1, c2 = st.columns([1, 3])
+            c1, c2 = st.columns([1, 3.4])
             with c1:
                 try:
-                    st.image(f"{API_URL}/images/{r['image_path']}", width=180)
+                    st.image(f"{API_URL}/images/{r['image_path']}", use_container_width=True)
                 except Exception:
                     pass
             with c2:
-                st.markdown(f"**{r.get('title') or r['image_path']}**")
-                st.caption(f"Classe : `{r['class_name']}` — RRF {r['rrf_score']:.4f}")
+                rank_cls = _rank_class(i)
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;gap:.5rem;">'
+                    f'<span class="rc-rank {rank_cls}">{i + 1}</span>'
+                    f'<strong>{r.get("title") or r["image_path"]}</strong>'
+                    f'<span class="rc-chip neutral">{r.get("class_name", "")}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    f'<div class="rc-score-row">{_score_bar(r["rrf_score"] / rrf_max)}'
+                    f'<small>RRF&nbsp;{r["rrf_score"]:.4f}</small></div>',
+                    unsafe_allow_html=True,
+                )
+                parts = []
                 if r.get("text_score") is not None:
-                    st.caption(f"BM25 : {r['text_score']:.2f}")
+                    parts.append(f"<small>📝 BM25 <b>{r['text_score']:.2f}</b></small>")
                 if r.get("visual_distance") is not None:
-                    st.caption(f"Distance visuelle : {r['visual_distance']:.4f}")
+                    parts.append(f"<small>🎨 dist <b>{r['visual_distance']:.4f}</b></small>")
+                if parts:
+                    st.markdown(
+                        f'<div style="display:flex;gap:1rem;color:var(--muted);'
+                        f'margin-top:.3rem;">{"".join(parts)}</div>',
+                        unsafe_allow_html=True,
+                    )
                 if r.get("tags"):
-                    st.markdown(" ".join(f":gray-background[{t}]"
-                                         for t in r["tags"].split()[:8]))
+                    st.markdown(_tag_pills(r["tags"], limit=8), unsafe_allow_html=True)
 
 
 # ======================================================================
@@ -851,17 +1031,29 @@ def page_mirflickr():
         if go and q.strip():
             d = api("GET", "/mirflickr/search", params={"q": q, "size": size})
             st.success(f"{d['total']:,} résultats, {d['search_ms']:.0f} ms")
+            s_max = max(r["score"] for r in d["results"]) or 1.0
             cols = st.columns(4)
             for i, r in enumerate(d["results"]):
                 with cols[i % 4].container(border=True):
-                    st.markdown(f"**{r['title'] or 'Sans titre'}**")
-                    st.caption(f"ID : `{r['photo_id']}` — "
-                               f"par *{r['owner'] or 'inconnu'}* · BM25 {r['score']:.2f}")
-                    tags = (r.get("tags") or "").split()[:6]
-                    if tags:
-                        st.markdown(" ".join(f":gray-background[{t}]" for t in tags))
-                    if r.get("license"):
-                        st.caption(f"Licence : {r['license']}")
+                    rank_cls = _rank_class(i)
+                    st.markdown(
+                        f'<div style="display:flex;align-items:center;gap:.5rem;">'
+                        f'<span class="rc-rank {rank_cls}">{i + 1}</span>'
+                        f'<strong style="line-height:1.2">'
+                        f'{r["title"] or "Sans titre"}</strong></div>'
+                        f'<div style="color:var(--muted);font-size:.78rem;margin-top:.3rem;">'
+                        f'ID <code>{r["photo_id"]}</code> · '
+                        f'<em>{r["owner"] or "inconnu"}</em></div>'
+                        f'<div class="rc-score-row">'
+                        f'{_score_bar(r["score"] / s_max, warm=True)}'
+                        f'<small>BM25&nbsp;{r["score"]:.2f}</small></div>'
+                        f'<div style="margin-top:.3rem;">'
+                        f'{_tag_pills(r.get("tags",""), limit=6)}</div>'
+                        + (f'<div style="color:var(--muted);font-size:.68rem;'
+                           f'margin-top:.4rem;">⚖ {r["license"]}</div>'
+                           if r.get("license") else ""),
+                        unsafe_allow_html=True,
+                    )
 
     with tab2:
         c1, c2, c3 = st.columns([2, 2, 1])
@@ -881,14 +1073,26 @@ def page_mirflickr():
                          if d.get("index") == "vptree"
                          else "scan linéaire exhaustif")
             st.success(f"{d['count']} résultats, {d['search_ms']:.0f} ms — {index_tag}")
+            # Distances L1 : plus petit = plus proche. Barre inversée.
+            d_max = max(r["distance"] for r in d["results"]) or 1.0
             cols = st.columns(4)
             for i, r in enumerate(d["results"]):
                 with cols[i % 4].container(border=True):
-                    st.markdown(f"**{r.get('title') or 'Sans titre'}**")
-                    st.caption(f"ID : `{r['photo_id']}` · dist L1 {r['distance']:.3f}")
-                    tags = (r.get("tags") or "").split()[:6]
-                    if tags:
-                        st.markdown(" ".join(f":gray-background[{t}]" for t in tags))
+                    rank_cls = _rank_class(i)
+                    sim = 1.0 - min(1.0, r["distance"] / d_max)
+                    st.markdown(
+                        f'<div style="display:flex;align-items:center;gap:.5rem;">'
+                        f'<span class="rc-rank {rank_cls}">{i + 1}</span>'
+                        f'<strong style="line-height:1.2">'
+                        f'{r.get("title") or "Sans titre"}</strong></div>'
+                        f'<div style="color:var(--muted);font-size:.78rem;margin-top:.3rem;">'
+                        f'ID <code>{r["photo_id"]}</code></div>'
+                        f'<div class="rc-score-row">{_score_bar(sim)}'
+                        f'<small>dist&nbsp;L1&nbsp;{r["distance"]:.3f}</small></div>'
+                        f'<div style="margin-top:.3rem;">'
+                        f'{_tag_pills(r.get("tags",""), limit=6)}</div>',
+                        unsafe_allow_html=True,
+                    )
 
 
 # ======================================================================
