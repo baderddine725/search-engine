@@ -10,6 +10,7 @@ import Evaluation from './pages/Evaluation';
 import Architecture from './pages/Architecture';
 import ApiDocs from './pages/ApiDocs';
 import Settings from './pages/Settings';
+import MirflickrSimilar from './pages/MirflickrSimilar';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/architecture" element={<Architecture />} />
         <Route path="/api" element={<ApiDocs />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/mirflickr/:photoId" element={<MirflickrSimilar />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>

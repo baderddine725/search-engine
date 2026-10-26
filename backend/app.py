@@ -471,6 +471,20 @@ def combined_search():
 MIRFLICKR_INDEX = "mirflickr"
 
 
+@app.route("/mirflickr/thumb/<int:photo_id>", methods=["GET"])
+def mirflickr_thumb(photo_id):
+    """Serve the MIRFLICKR thumbnail JPEG for a given photo id."""
+    from flask import Response, abort
+    from mirflickr_thumbs import thumb
+    try:
+        data = thumb(photo_id)
+    except FileNotFoundError:
+        abort(404)
+    resp = Response(data, mimetype="image/jpeg")
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
+
+
 @app.route("/mirflickr/stats", methods=["GET"])
 def mirflickr_stats():
     """État de l'index MIRFLICKR-1M."""
@@ -479,11 +493,17 @@ def mirflickr_stats():
         descriptors = available()
     except Exception:
         descriptors = []
+    try:
+        from mirflickr_thumbs import available as thumbs_available
+        thumbs = thumbs_available()
+    except Exception:
+        thumbs = {}
     docs = count(es, MIRFLICKR_INDEX)
     return jsonify({
         "indexed_documents": docs,
         "mpeg7_descriptors": descriptors,
         "has_text": docs > 0,
+        "thumbs": thumbs,
     })
 
 

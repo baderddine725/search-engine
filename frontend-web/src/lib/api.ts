@@ -280,3 +280,8 @@ export const Mirflickr = {
 };
 
 export const imageUrl = (path: string) => `${API_BASE}/images/${path}`;
+
+// Thumbnail URL for a MIRFLICKR photo id — the backend serves the JPEG
+// straight out of the mirflickr thumbnail zip archives.
+export const mirflickrThumb = (photo_id: number) =>
+  `${API_BASE}/mirflickr/thumb/${photo_id}`;
