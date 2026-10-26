@@ -24,84 +24,232 @@ st.set_page_config(
 
 _CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
-html, body, [class*="st-"] { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1b1b1d; }
-h1, h2, h3, h4, .serif { font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
-        font-weight: 500; letter-spacing: -0.015em; color: #0f0f12; }
+:root {
+  --ink:     #16161a;
+  --ink-2:   #3c3c42;
+  --muted:   #74737a;
+  --rule:    #e6e3dc;
+  --rule-2:  #f1ede4;
+  --paper:   #faf7f0;
+  --paper-2: #f3eee2;
+  --accent:  #7b2e3a;
+  --accent-soft: #f3e0e3;
+  --gold:    #c9a24b;
+}
 
-.block-container { padding-top: 3rem; padding-bottom: 5rem; max-width: 1180px; }
+html, body, [data-testid="stAppViewContainer"] {
+  background: var(--paper);
+  color: var(--ink);
+}
+html, body, [class*="st-"] {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--ink);
+}
+h1, h2, h3, h4, .serif {
+  font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  font-weight: 500; letter-spacing: -0.015em; color: var(--ink);
+}
+code, pre, kbd, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 
-section[data-testid="stSidebar"] { background: #fbfaf7; border-right: 1px solid #ececea; }
-section[data-testid="stSidebar"] h2 { font-family: 'Fraunces', serif; }
+.block-container { padding-top: 2.4rem; padding-bottom: 5rem; max-width: 1200px; }
 
-.page-head { margin-bottom: 2rem; padding-bottom: 1.4rem; border-bottom: 1px solid #ececea; }
-.page-head .eyebrow { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
-        color: #8b8a85; font-weight: 500; margin-bottom: .5rem; }
-.page-head h1 { font-size: 2.4rem; margin: 0; line-height: 1.1; }
-.page-head p  { color: #55555a; margin: .7rem 0 0; max-width: 60ch; font-size: 1rem; line-height: 1.55; }
+section[data-testid="stSidebar"] {
+  background: #f6f1e5;
+  border-right: 1px solid var(--rule);
+}
+section[data-testid="stSidebar"] * { font-family: 'Inter', sans-serif; }
 
-.meta-row { display: flex; gap: 1.6rem; margin-top: 1.1rem; flex-wrap: wrap; }
-.meta-row .m-item { font-size: .82rem; color: #55555a; }
-.meta-row .m-item b { color: #0f0f12; font-weight: 500; }
+[data-testid="stHeader"] { background: transparent; }
+
+.page-head {
+  margin-bottom: 2rem;
+  position: relative;
+}
+.page-head .eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .68rem; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--accent); font-weight: 500; margin-bottom: .9rem;
+  display: inline-block; padding-bottom: .35rem;
+  border-bottom: 1px solid var(--accent);
+}
+.page-head h1 {
+  font-size: 2.9rem; margin: 0; line-height: 1.05;
+  font-weight: 500; font-variant-ligatures: common-ligatures;
+}
+.page-head p {
+  color: var(--ink-2); margin: .9rem 0 0; max-width: 62ch;
+  font-size: 1.02rem; line-height: 1.6;
+}
+.rule-ornament {
+  display: flex; align-items: center; gap: .6rem;
+  margin: 2rem 0 1.4rem 0;
+}
+.rule-ornament::before, .rule-ornament::after {
+  content: ''; flex: 1; height: 1px; background: var(--rule);
+}
+.rule-ornament span {
+  color: var(--accent); font-family: 'Fraunces', serif;
+  font-style: italic; font-size: .95rem;
+}
 
 div[data-testid="stVerticalBlockBorderWrapper"] {
-        border: 1px solid #ececea !important;
-        border-radius: 4px !important;
-        box-shadow: none;
-        background: #fff;
-        transition: border-color .15s ease; }
-div[data-testid="stVerticalBlockBorderWrapper"]:hover { border-color: #c9c8c3 !important; }
+  border: 1px solid var(--rule) !important;
+  border-radius: 6px !important;
+  background: #fffdf7;
+  box-shadow: 0 1px 0 rgba(22,22,26,.03), 0 12px 24px -18px rgba(22,22,26,.14);
+  transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+}
+div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+  border-color: #d6d1c2 !important;
+  box-shadow: 0 1px 0 rgba(22,22,26,.04), 0 20px 36px -20px rgba(22,22,26,.18);
+  transform: translateY(-1px);
+}
 
-div[data-testid="stImage"] img { border-radius: 2px; object-fit: cover; aspect-ratio: 4 / 3; }
+div[data-testid="stImage"] img {
+  border-radius: 4px; object-fit: cover; aspect-ratio: 4 / 3;
+  box-shadow: inset 0 0 0 1px rgba(22,22,26,.05);
+  transition: transform .3s ease;
+}
+div[data-testid="stImage"]:hover img { transform: scale(1.01); }
 
-div[data-testid="stMetricValue"] { font-family: 'Fraunces', serif; font-size: 2rem;
-        font-weight: 500; color: #0f0f12; }
-div[data-testid="stMetricLabel"] { font-size: .72rem; letter-spacing: .12em;
-        text-transform: uppercase; color: #8b8a85; font-weight: 500; }
-div[data-testid="stMetricDelta"] { font-size: .78rem; }
+.stat-card {
+  position: relative;
+  padding: 1.1rem 1.2rem 1.1rem 1.4rem;
+  background: #fffdf7;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  box-shadow: 0 1px 0 rgba(22,22,26,.03);
+}
+.stat-card::before {
+  content: ''; position: absolute; left: 0; top: 14%; bottom: 14%;
+  width: 2px; background: var(--accent);
+}
+.stat-card .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .66rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: .35rem;
+}
+.stat-card .value {
+  font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 500;
+  line-height: 1.1; color: var(--ink);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.stat-card .unit {
+  font-size: .78rem; color: var(--muted); margin-left: .3rem;
+  font-family: 'Inter', sans-serif;
+}
 
-.rc-rank { font-family: 'Fraunces', serif; font-size: 1.05rem; color: #8b8a85;
-        font-variant-numeric: tabular-nums; margin-right: .5rem; min-width: 1.6rem;
-        display: inline-block; }
-.rc-rank.top { color: #0f0f12; font-weight: 600; }
+.approach {
+  padding: 1.6rem 1.8rem;
+  background: #fffdf7;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 1px 0 rgba(22,22,26,.03), 0 20px 36px -24px rgba(22,22,26,.15);
+}
+.approach::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--accent);
+}
+.approach .idx {
+  font-family: 'Fraunces', serif; font-style: italic;
+  font-size: .9rem; color: var(--accent);
+}
+.approach h4 {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: 1.5rem; margin: .3rem 0 .6rem 0; letter-spacing: -0.015em;
+}
+.approach .desc { color: var(--ink-2); font-size: .92rem; line-height: 1.55; }
+.approach .meta {
+  display: flex; gap: 1.4rem; margin-top: 1rem;
+  padding-top: .9rem; border-top: 1px solid var(--rule-2);
+  font-size: .78rem; color: var(--muted);
+}
+.approach .meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 
-.rc-chip { display: inline-block; font-size: .7rem; font-weight: 500;
-        padding: .14rem .5rem; border-radius: 2px; letter-spacing: .02em; }
-.rc-chip.ok      { background: transparent; color: #2d5a3d; border: 1px solid #b7cfbf; }
-.rc-chip.miss    { background: transparent; color: #96302e; border: 1px solid #d8bebd; }
-.rc-chip.neutral { background: transparent; color: #55555a; border: 1px solid #d9d8d3; }
+.rc-rank {
+  font-family: 'Fraunces', serif; font-size: 1.1rem; color: var(--muted);
+  font-variant-numeric: tabular-nums; font-style: italic;
+  margin-right: .5rem; min-width: 1.8rem; display: inline-block;
+}
+.rc-rank.top { color: var(--accent); font-weight: 600; font-style: normal; }
 
-.rc-score-row { display: flex; align-items: center; gap: .6rem; margin-top: .5rem; }
-.rc-score-row small { color: #8b8a85; font-variant-numeric: tabular-nums; font-size: .72rem; }
-.rc-bar { flex: 1; height: 2px; background: #ececea; border-radius: 0; overflow: hidden; }
-.rc-bar > span { display: block; height: 100%; background: #0f0f12; }
-.rc-bar.warm > span { background: #96302e; }
+.rc-chip {
+  display: inline-block; font-size: .68rem; font-weight: 500;
+  padding: .18rem .55rem; border-radius: 999px; letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.rc-chip.ok      { color: #2d5a3d; border: 1px solid #bcd4c4; background: #eff6f0; }
+.rc-chip.miss    { color: var(--accent); border: 1px solid #e3c3c7; background: var(--accent-soft); }
+.rc-chip.neutral { color: var(--ink-2); border: 1px solid var(--rule); background: var(--paper-2); }
 
-.tag-pill { display: inline-block; margin: 2px 4px 0 0; padding: 1px 7px; font-size: .7rem;
-        color: #55555a; border: 1px solid #ececea; border-radius: 2px;
-        background: transparent; }
+.rc-score-row { display: flex; align-items: center; gap: .55rem; margin-top: .5rem; }
+.rc-score-row small { color: var(--muted); font-variant-numeric: tabular-nums; font-size: .72rem; }
+.rc-bar {
+  flex: 1; height: 3px; background: var(--rule-2); border-radius: 999px; overflow: hidden;
+}
+.rc-bar > span { display: block; height: 100%; background: var(--ink); border-radius: 999px; }
+.rc-bar.warm > span { background: var(--accent); }
+
+.tag-pill {
+  display: inline-block; margin: 3px 4px 0 0; padding: 2px 8px;
+  font-size: .7rem; color: var(--ink-2);
+  border: 1px solid var(--rule); border-radius: 999px;
+  background: #fffdf7;
+}
 
 div.stButton > button {
-        border-radius: 2px; font-weight: 500; letter-spacing: .02em;
-        border: 1px solid #0f0f12; background: #fff; color: #0f0f12;
-        transition: background .12s ease, color .12s ease; padding: .5rem 1.1rem; }
-div.stButton > button:hover { background: #0f0f12; color: #fff; border-color: #0f0f12; }
-div.stButton > button[kind="primary"] { background: #0f0f12; color: #fff; border-color: #0f0f12; }
-div.stButton > button[kind="primary"]:hover { background: #343438; border-color: #343438; }
+  border-radius: 999px; font-weight: 500; letter-spacing: .02em;
+  padding: .55rem 1.4rem;
+  border: 1px solid var(--ink); background: transparent; color: var(--ink);
+  transition: all .15s ease; font-size: .9rem;
+}
+div.stButton > button:hover { background: var(--ink); color: var(--paper); }
+div.stButton > button[kind="primary"] {
+  background: var(--ink); color: var(--paper); border-color: var(--ink);
+  box-shadow: 0 6px 14px -8px rgba(22,22,26,.4);
+}
+div.stButton > button[kind="primary"]:hover {
+  background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 10px 20px -8px rgba(123,46,58,.5);
+}
 
-hr { border: 0; border-top: 1px solid #ececea; margin: 2rem 0; }
+input[type="text"], textarea, [data-baseweb="input"] input {
+  border-radius: 6px !important;
+}
 
-.query-frame { border: 1px solid #ececea; padding: 1rem; background: #fff; }
-.query-caption { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
-        color: #8b8a85; margin-top: .7rem; text-align: center; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2.4rem 0; }
 
-.result-caption { font-size: .82rem; color: #0f0f12; line-height: 1.35; margin-top: .5rem;
-        display: flex; align-items: baseline; gap: .3rem; }
-.muted { color: #8b8a85; font-size: .72rem; }
+.result-caption {
+  font-size: .85rem; color: var(--ink); line-height: 1.35; margin-top: .55rem;
+  display: flex; align-items: baseline; gap: .3rem; flex-wrap: wrap;
+}
+.muted { color: var(--muted); font-size: .72rem; }
 
-.callout { border-left: 2px solid #0f0f12; padding: .1rem 0 .1rem 1rem; margin: 1rem 0;
-        color: #343438; font-size: .95rem; }
+.callout {
+  border-left: 2px solid var(--accent); padding: .3rem 0 .3rem 1.1rem;
+  margin: 1.2rem 0; color: var(--ink-2); font-size: .95rem;
+  background: linear-gradient(90deg, var(--accent-soft) 0%, transparent 20%);
+}
+
+[data-testid="stMetricValue"] { font-family: 'Fraunces', serif; font-weight: 500;
+    font-size: 2rem; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+[data-testid="stMetricLabel"] { font-family: 'JetBrains Mono', monospace;
+    font-size: .68rem; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; }
+
+[data-baseweb="tab-list"] { border-bottom: 1px solid var(--rule) !important; gap: 1.5rem; }
+[data-baseweb="tab"] {
+  font-family: 'Fraunces', serif !important; font-size: 1.02rem !important;
+  color: var(--muted) !important; padding: .3rem 0 !important;
+  background: transparent !important;
+}
+[data-baseweb="tab"][aria-selected="true"] {
+  color: var(--ink) !important;
+  border-bottom: 2px solid var(--accent) !important;
+}
 </style>
 """
 
@@ -361,49 +509,68 @@ def page_home():
         return
 
     classes = stats.get("classes", {})
-    # Chiffres en bandeau sobre, sans encadré par tuile.
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Elasticsearch", health["elasticsearch"])
-    c2.metric("Images indexées", stats["models"].get("inception_lbp", {}).get("images", 0))
-    c3.metric("Classes", len(classes))
-    c4.metric("Documents texte", stats["text_documents"])
 
-    st.markdown('<hr/>', unsafe_allow_html=True)
-    st.markdown('<h3 class="serif">Deux approches comparées</h3>', unsafe_allow_html=True)
-    cols = st.columns(len(get_models()))
-    for col, (name, cfg) in zip(cols, get_models().items()):
-        with col:
-            st.markdown(
-                f'<div style="padding:1rem 0;">'
-                f'<div class="muted">{name}</div>'
-                f'<h4 class="serif" style="margin:.2rem 0 .6rem 0;">{cfg["label"]}</h4>'
-                f'<div style="color:#55555a;font-size:.9rem;line-height:1.5;'
-                f'margin-bottom:.9rem;">{cfg.get("description", "")}</div>'
-                f'<div class="muted">Vecteur · <b style="color:#0f0f12;">{cfg["dims"]}</b>'
-                f' &nbsp;·&nbsp; Images · '
-                f'<b style="color:#0f0f12;">{stats["models"].get(name, {}).get("images", 0)}</b>'
-                f'</div></div>',
-                unsafe_allow_html=True,
-            )
+    # ---- Bandeau de chiffres : cartes avec liseré d'accent --------------
+    stat_items = [
+        ("Elasticsearch", str(health["elasticsearch"]), "nœud"),
+        ("Images visuelles", f"{stats['models'].get('inception_lbp', {}).get('images', 0):,}", "indexées"),
+        ("Classes", str(len(classes)), "catégories"),
+        ("Documents texte", f"{stats['text_documents']:,}", "BM25"),
+    ]
+    cols = st.columns(4, gap="small")
+    for col, (lbl, val, unit) in zip(cols, stat_items):
+        col.markdown(
+            f'<div class="stat-card">'
+            f'<div class="label">{lbl}</div>'
+            f'<div class="value">{val}<span class="unit">{unit}</span></div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
+    # ---- Approches comparées : cartes narratives ------------------------
+    st.markdown(
+        '<div class="rule-ornament"><span>&#10038;&nbsp; Approches comparées</span></div>',
+        unsafe_allow_html=True,
+    )
+    model_list = list(get_models().items())
+    cols = st.columns(len(model_list), gap="medium")
+    for i, (col, (name, cfg)) in enumerate(zip(cols, model_list)):
+        n_images = stats["models"].get(name, {}).get("images", 0)
+        col.markdown(
+            f'<div class="approach">'
+            f'<div class="idx">— N° {i + 1:02d}</div>'
+            f'<h4>{cfg["label"]}</h4>'
+            f'<div class="desc">{cfg.get("description", "")}</div>'
+            f'<div class="meta">'
+            f'<span>Vecteur <b>{cfg["dims"]}</b> dims</span>'
+            f'<span>Images <b>{n_images:,}</b></span>'
+            f'</div></div>',
+            unsafe_allow_html=True,
+        )
+
+    # ---- Répartition de la base ----------------------------------------
     if classes:
-        st.markdown('<hr/>', unsafe_allow_html=True)
-        st.markdown('<h3 class="serif">Répartition de la base</h3>',
-                    unsafe_allow_html=True)
+        st.markdown(
+            '<div class="rule-ornament"><span>&#10038;&nbsp; Répartition de la base</span></div>',
+            unsafe_allow_html=True,
+        )
         df = pd.DataFrame({"Classe": list(classes), "Images": list(classes.values())})
         chart = (
             alt.Chart(df)
-            .mark_bar(color="#0f0f12", size=22)
+            .mark_bar(size=28, cornerRadiusEnd=2)
             .encode(
                 x=alt.X("Classe:N", sort="-y", title=None,
-                        axis=alt.Axis(labelAngle=0, labelColor="#55555a",
-                                      domainColor="#ececea", tickColor="#ececea")),
+                        axis=alt.Axis(labelAngle=0, labelColor="#3c3c42",
+                                      labelFont="Fraunces", labelFontSize=12,
+                                      domainOpacity=0, tickOpacity=0)),
                 y=alt.Y("Images:Q", title=None,
-                        axis=alt.Axis(labelColor="#8b8a85", gridColor="#f3f1ec",
-                                      domainOpacity=0)),
+                        axis=alt.Axis(labelColor="#74737a", gridColor="#f1ede4",
+                                      labelFont="JetBrains Mono", labelFontSize=10,
+                                      domainOpacity=0, tickOpacity=0)),
+                color=alt.value("#16161a"),
                 tooltip=["Classe", "Images"],
             )
-            .properties(height=220)
+            .properties(height=240, background="transparent")
             .configure_view(strokeWidth=0)
         )
         st.altair_chart(chart, use_container_width=True)
