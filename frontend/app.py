@@ -24,66 +24,84 @@ st.set_page_config(
 
 _CSS = """
 <style>
-.block-container { padding-top: 2rem; padding-bottom: 4rem; max-width: 1400px; }
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap');
 
-.hero { padding: 1.8rem 2rem; border-radius: 16px; color: #fff; margin-bottom: 1.2rem;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 55%, #5b4bd4 100%);
-        box-shadow: 0 4px 16px rgba(16,24,40,0.08); }
-.hero h1 { color:#fff; margin:0 0 .3rem 0; font-weight:700; letter-spacing:-0.02em; }
-.hero p  { color: rgba(255,255,255,0.88); margin:0; font-size:1rem; max-width:70ch; }
-.hero .badges { margin-top: .9rem; display:flex; gap:.4rem; flex-wrap:wrap; }
-.hero .badges span { background: rgba(255,255,255,0.15); color:#fff; font-size:.75rem;
-        padding:.2rem .65rem; border-radius:999px; border:1px solid rgba(255,255,255,0.22); }
+html, body, [class*="st-"] { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1b1b1d; }
+h1, h2, h3, h4, .serif { font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+        font-weight: 500; letter-spacing: -0.015em; color: #0f0f12; }
+
+.block-container { padding-top: 3rem; padding-bottom: 5rem; max-width: 1180px; }
+
+section[data-testid="stSidebar"] { background: #fbfaf7; border-right: 1px solid #ececea; }
+section[data-testid="stSidebar"] h2 { font-family: 'Fraunces', serif; }
+
+.page-head { margin-bottom: 2rem; padding-bottom: 1.4rem; border-bottom: 1px solid #ececea; }
+.page-head .eyebrow { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+        color: #8b8a85; font-weight: 500; margin-bottom: .5rem; }
+.page-head h1 { font-size: 2.4rem; margin: 0; line-height: 1.1; }
+.page-head p  { color: #55555a; margin: .7rem 0 0; max-width: 60ch; font-size: 1rem; line-height: 1.55; }
+
+.meta-row { display: flex; gap: 1.6rem; margin-top: 1.1rem; flex-wrap: wrap; }
+.meta-row .m-item { font-size: .82rem; color: #55555a; }
+.meta-row .m-item b { color: #0f0f12; font-weight: 500; }
 
 div[data-testid="stVerticalBlockBorderWrapper"] {
-        border:1px solid rgba(60,60,90,0.09) !important;
-        border-radius:14px !important;
-        box-shadow: 0 1px 2px rgba(16,24,40,0.04), 0 4px 14px rgba(16,24,40,0.04);
-        transition: box-shadow .18s ease, transform .18s ease; }
-div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-        box-shadow: 0 8px 28px rgba(16,24,40,0.09);
-        transform: translateY(-1px); }
+        border: 1px solid #ececea !important;
+        border-radius: 4px !important;
+        box-shadow: none;
+        background: #fff;
+        transition: border-color .15s ease; }
+div[data-testid="stVerticalBlockBorderWrapper"]:hover { border-color: #c9c8c3 !important; }
 
-div[data-testid="stImage"] img { border-radius:10px; object-fit:cover; aspect-ratio: 4 / 3;
-        transition: transform .25s ease; }
-div[data-testid="stImage"]:hover img { transform: scale(1.015); }
+div[data-testid="stImage"] img { border-radius: 2px; object-fit: cover; aspect-ratio: 4 / 3; }
 
-div[data-testid="stMetricValue"] { font-size:1.7rem; font-weight:700; color:#2a78d6; }
-div[data-testid="stMetricLabel"] { font-size:.78rem; letter-spacing:.04em;
-        text-transform:uppercase; color:#6b6a7a; font-weight:500; }
+div[data-testid="stMetricValue"] { font-family: 'Fraunces', serif; font-size: 2rem;
+        font-weight: 500; color: #0f0f12; }
+div[data-testid="stMetricLabel"] { font-size: .72rem; letter-spacing: .12em;
+        text-transform: uppercase; color: #8b8a85; font-weight: 500; }
+div[data-testid="stMetricDelta"] { font-size: .78rem; }
 
-.rc-rank { display:inline-flex; align-items:center; justify-content:center;
-        width:1.8rem; height:1.8rem; border-radius:50%;
-        background: linear-gradient(135deg, #2a78d6, #5b4bd4);
-        color:#fff; font-weight:600; font-size:.82rem; }
-.rc-rank.gold   { background: linear-gradient(135deg, #f6d365, #fda085); color:#4a3400; }
-.rc-rank.silver { background: linear-gradient(135deg, #e2e2e4, #adb5bd); color:#35363d; }
-.rc-rank.bronze { background: linear-gradient(135deg, #d4844a, #a05a1f); color:#fff; }
+.rc-rank { font-family: 'Fraunces', serif; font-size: 1.05rem; color: #8b8a85;
+        font-variant-numeric: tabular-nums; margin-right: .5rem; min-width: 1.6rem;
+        display: inline-block; }
+.rc-rank.top { color: #0f0f12; font-weight: 600; }
 
-.rc-chip { display:inline-block; font-size:.72rem; font-weight:600;
-        padding:.18rem .55rem; border-radius:999px; }
-.rc-chip.ok      { background:#e6f6ea; color:#216e39; border:1px solid #c6ebd0; }
-.rc-chip.miss    { background:#fde9ea; color:#a01625; border:1px solid #f3c7cb; }
-.rc-chip.neutral { background:#eef1f6; color:#3d4b63; border:1px solid #dde3ec; }
+.rc-chip { display: inline-block; font-size: .7rem; font-weight: 500;
+        padding: .14rem .5rem; border-radius: 2px; letter-spacing: .02em; }
+.rc-chip.ok      { background: transparent; color: #2d5a3d; border: 1px solid #b7cfbf; }
+.rc-chip.miss    { background: transparent; color: #96302e; border: 1px solid #d8bebd; }
+.rc-chip.neutral { background: transparent; color: #55555a; border: 1px solid #d9d8d3; }
 
-.rc-score-row { display:flex; align-items:center; gap:.5rem; margin-top:.35rem; }
-.rc-score-row small { color:#6b6a7a; font-variant-numeric: tabular-nums; }
-.rc-bar { flex:1; height:5px; background:#eef1f6; border-radius:999px; overflow:hidden; }
-.rc-bar > span { display:block; height:100%; border-radius:999px;
-        background: linear-gradient(90deg, #2a78d6, #5b4bd4); }
-.rc-bar.warm > span { background: linear-gradient(90deg, #eb6834, #f6a35b); }
+.rc-score-row { display: flex; align-items: center; gap: .6rem; margin-top: .5rem; }
+.rc-score-row small { color: #8b8a85; font-variant-numeric: tabular-nums; font-size: .72rem; }
+.rc-bar { flex: 1; height: 2px; background: #ececea; border-radius: 0; overflow: hidden; }
+.rc-bar > span { display: block; height: 100%; background: #0f0f12; }
+.rc-bar.warm > span { background: #96302e; }
 
-.model-tag { display:inline-block; width:.8rem; height:.8rem; border-radius:3px;
-        margin-right:.4rem; vertical-align:-1px; }
+.tag-pill { display: inline-block; margin: 2px 4px 0 0; padding: 1px 7px; font-size: .7rem;
+        color: #55555a; border: 1px solid #ececea; border-radius: 2px;
+        background: transparent; }
 
-div.stButton > button { border-radius:10px; font-weight:500; }
-div.stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #2a78d6, #5b4bd4); border:0;
-        box-shadow: 0 2px 8px rgba(42,120,214,0.3); }
+div.stButton > button {
+        border-radius: 2px; font-weight: 500; letter-spacing: .02em;
+        border: 1px solid #0f0f12; background: #fff; color: #0f0f12;
+        transition: background .12s ease, color .12s ease; padding: .5rem 1.1rem; }
+div.stButton > button:hover { background: #0f0f12; color: #fff; border-color: #0f0f12; }
+div.stButton > button[kind="primary"] { background: #0f0f12; color: #fff; border-color: #0f0f12; }
+div.stButton > button[kind="primary"]:hover { background: #343438; border-color: #343438; }
 
-.tag-pill { display:inline-block; margin:2px 3px 0 0; padding:2px 8px;
-        font-size:.72rem; background:#eef1f6; color:#3d4b63;
-        border-radius:999px; border:1px solid #e3e7ee; }
+hr { border: 0; border-top: 1px solid #ececea; margin: 2rem 0; }
+
+.query-frame { border: 1px solid #ececea; padding: 1rem; background: #fff; }
+.query-caption { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+        color: #8b8a85; margin-top: .7rem; text-align: center; }
+
+.result-caption { font-size: .82rem; color: #0f0f12; line-height: 1.35; margin-top: .5rem;
+        display: flex; align-items: baseline; gap: .3rem; }
+.muted { color: #8b8a85; font-size: .72rem; }
+
+.callout { border-left: 2px solid #0f0f12; padding: .1rem 0 .1rem 1rem; margin: 1rem 0;
+        color: #343438; font-size: .95rem; }
 </style>
 """
 
@@ -95,7 +113,18 @@ except Exception:
 
 
 def _rank_class(i: int) -> str:
-    return ("gold" if i == 0 else "silver" if i == 1 else "bronze" if i == 2 else "")
+    return "top" if i == 0 else ""
+
+
+def page_head(eyebrow: str, title: str, subtitle: str = ""):
+    """En-tête éditorial à gauche (surtitre, titre serif, chapô)."""
+    sub = f'<p>{subtitle}</p>' if subtitle else ""
+    st.markdown(
+        f'<div class="page-head">'
+        f'<div class="eyebrow">{eyebrow}</div>'
+        f'<h1>{title}</h1>{sub}</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def _score_bar(score: float, warm: bool = False) -> str:
@@ -198,11 +227,10 @@ def show_image(image_path: str):
 
 
 def image_results_grid(results, query_class=None, n_cols=5, key="grid", on_similar=None):
-    """Grille de résultats CBIR ; pertinence en vert/rouge si la classe attendue est connue."""
+    """Grille de résultats CBIR ; pertinence éditoriale, rang en chiffres romains discrets."""
     if not results:
         st.info("Aucun résultat.")
         return
-    # Normalise les scores pour la barre (0..1 relative au meilleur hit)
     scores = [float(r.get("score", 0.0) or 0.0) for r in results]
     s_max = max(scores) or 1.0
     cols = st.columns(n_cols)
@@ -212,32 +240,26 @@ def image_results_grid(results, query_class=None, n_cols=5, key="grid", on_simil
                 show_image(r["image_path"])
                 cls = r.get("class_name", "")
                 if query_class:
-                    chip = (f'<span class="rc-chip ok">✓ {cls}</span>'
+                    chip = (f'<span class="rc-chip ok">{cls}</span>'
                             if cls == query_class else
-                            f'<span class="rc-chip miss">✗ {cls}</span>')
+                            f'<span class="rc-chip miss">{cls}</span>')
                 else:
                     chip = f'<span class="rc-chip neutral">{cls or "—"}</span>'
                 dist = r.get("distance")
-                rank_cls = _rank_class(i)
                 score = scores[i]
                 bar = _score_bar(score / s_max) if score else ""
-                dist_html = (f"<small>dist&nbsp;{dist:.3f}</small>"
-                             if dist is not None else "")
+                dist_txt = f" · dist {dist:.3f}" if dist is not None else ""
                 st.markdown(
-                    f'<div style="display:flex;align-items:center;gap:.5rem;'
-                    f'margin-top:.4rem;flex-wrap:wrap;">'
-                    f'<span class="rc-rank {rank_cls}">{i + 1}</span>'
-                    f'{chip}'
-                    f'</div>'
+                    f'<div class="result-caption">'
+                    f'<span class="rc-rank {_rank_class(i)}">{i + 1:02d}</span>'
+                    f'{chip}</div>'
                     f'<div class="rc-score-row">{bar}'
-                    f'<small>{score:.3f}</small></div>'
-                    f'<div style="color:var(--muted);font-size:.72rem;'
-                    f'margin-top:.15rem;">{dist_html}</div>',
+                    f'<small>{score:.3f}{dist_txt}</small></div>',
                     unsafe_allow_html=True,
                 )
                 if on_similar:
                     st.button(
-                        "🔄 Images similaires", key=f"{key}-sim-{i}",
+                        "Images similaires →", key=f"{key}-sim-{i}",
                         on_click=on_similar, args=(r["image_path"],),
                         use_container_width=True,
                     )
@@ -318,18 +340,13 @@ def request_kwargs(kind: str, value, extra: dict):
 # ======================================================================
 
 def page_home():
-    st.markdown(
-        '<div class="hero">'
-        '<h1>🔍 Moteur de Recherche d\'Images</h1>'
-        "<p>Recherche par texte (TBIR) et par contenu visuel (CBIR) sur Elasticsearch — "
-        "descripteurs MPEG-7 et classiques (color · LBP · HOG), partition de l'espace "
-        "des index par VP-Tree et fusion rang-réciproque texte + image.</p>"
-        '<div class="badges">'
-        '<span>Elasticsearch 7.17</span><span>Elastiknn LSH</span>'
-        '<span>VP-Tree L1</span><span>MIRFLICKR-1M</span>'
-        '<span>InceptionV3 + LBP</span><span>VGG16</span>'
-        '</div></div>',
-        unsafe_allow_html=True,
+    page_head(
+        "TBIR · CBIR",
+        "Moteur de recherche d'images",
+        "Recherche par mots-clés et par similarité visuelle sur Elasticsearch. "
+        "Descripteurs MPEG-7 et descripteurs classiques (couleur, LBP, HOG), "
+        "partition métrique de l'espace des index par VP-Tree, fusion rang-réciproque "
+        "des deux modalités.",
     )
 
     health = None
@@ -344,39 +361,50 @@ def page_home():
         return
 
     classes = stats.get("classes", {})
+    # Chiffres en bandeau sobre, sans encadré par tuile.
     c1, c2, c3, c4 = st.columns(4)
-    for col, label, value in [
-        (c1, "Elasticsearch", health["elasticsearch"]),
-        (c2, "Images indexées", stats["models"].get("inception_lbp", {}).get("images", 0)),
-        (c3, "Classes", len(classes)),
-        (c4, "Documents texte (Flickr)", stats["text_documents"]),
-    ]:
-        with col.container(border=True):
-            st.metric(label, value)
+    c1.metric("Elasticsearch", health["elasticsearch"])
+    c2.metric("Images indexées", stats["models"].get("inception_lbp", {}).get("images", 0))
+    c3.metric("Classes", len(classes))
+    c4.metric("Documents texte", stats["text_documents"])
 
-    st.subheader("Approches comparées")
+    st.markdown('<hr/>', unsafe_allow_html=True)
+    st.markdown('<h3 class="serif">Deux approches comparées</h3>', unsafe_allow_html=True)
     cols = st.columns(len(get_models()))
     for col, (name, cfg) in zip(cols, get_models().items()):
-        with col.container(border=True):
-            st.markdown(f"#### {model_tag(name)}", unsafe_allow_html=True)
-            st.caption(cfg.get("description", ""))
+        with col:
             st.markdown(
-                f"Dimension du vecteur : **{cfg['dims']}**  \n"
-                f"Images indexées : **{stats['models'].get(name, {}).get('images', 0)}**"
+                f'<div style="padding:1rem 0;">'
+                f'<div class="muted">{name}</div>'
+                f'<h4 class="serif" style="margin:.2rem 0 .6rem 0;">{cfg["label"]}</h4>'
+                f'<div style="color:#55555a;font-size:.9rem;line-height:1.5;'
+                f'margin-bottom:.9rem;">{cfg.get("description", "")}</div>'
+                f'<div class="muted">Vecteur · <b style="color:#0f0f12;">{cfg["dims"]}</b>'
+                f' &nbsp;·&nbsp; Images · '
+                f'<b style="color:#0f0f12;">{stats["models"].get(name, {}).get("images", 0)}</b>'
+                f'</div></div>',
+                unsafe_allow_html=True,
             )
 
     if classes:
-        st.subheader("Répartition de la base d'images")
+        st.markdown('<hr/>', unsafe_allow_html=True)
+        st.markdown('<h3 class="serif">Répartition de la base</h3>',
+                    unsafe_allow_html=True)
         df = pd.DataFrame({"Classe": list(classes), "Images": list(classes.values())})
         chart = (
             alt.Chart(df)
-            .mark_bar(cornerRadiusEnd=4, color=MODEL_COLORS["inception_lbp"], size=28)
+            .mark_bar(color="#0f0f12", size=22)
             .encode(
-                x=alt.X("Classe:N", sort="-y", title=None, axis=alt.Axis(labelAngle=0)),
-                y=alt.Y("Images:Q", title="Nombre d'images"),
+                x=alt.X("Classe:N", sort="-y", title=None,
+                        axis=alt.Axis(labelAngle=0, labelColor="#55555a",
+                                      domainColor="#ececea", tickColor="#ececea")),
+                y=alt.Y("Images:Q", title=None,
+                        axis=alt.Axis(labelColor="#8b8a85", gridColor="#f3f1ec",
+                                      domainOpacity=0)),
                 tooltip=["Classe", "Images"],
             )
-            .properties(height=260)
+            .properties(height=220)
+            .configure_view(strokeWidth=0)
         )
         st.altair_chart(chart, use_container_width=True)
 
@@ -390,8 +418,11 @@ def page_home():
 
 
 def page_text_search():
-    st.header("📝 Recherche textuelle (TBIR)")
-    st.caption("Recherche multi-champs (titre ×3, tags ×2, description) avec tolérance aux fautes.")
+    page_head(
+        "TBIR",
+        "Recherche textuelle",
+        "Multi-champs sur titre (×3), tags (×2) et description, avec tolérance aux fautes.",
+    )
 
     with st.form("text-search"):
         c1, c2 = st.columns([4, 1])
@@ -454,7 +485,12 @@ def page_text_search():
 
 
 def page_image_search():
-    st.header("🖼️ Recherche par image (CBIR)")
+    page_head(
+        "CBIR",
+        "Recherche par image",
+        "Donner une image en entrée — tirée de la base, uploadée ou pointée par une URL — "
+        "et retrouver les plus proches dans l'espace du descripteur choisi.",
+    )
 
     def set_query(path):
         cls = path.split("/", 1)[0]
@@ -507,7 +543,12 @@ def page_image_search():
 
 
 def page_compare():
-    st.header("⚖️ Comparaison : InceptionV3 + LBP vs VGG16")
+    page_head(
+        "Évaluation",
+        "InceptionV3 + LBP contre VGG16",
+        "La même requête visuelle est envoyée aux deux modèles, puis les métriques "
+        "d'évaluation (précision@k, mAP, P@1) sont calculées sur l'ensemble de la base.",
+    )
     st.markdown(
         f"{model_tag('inception_lbp')} &nbsp;&nbsp;vs&nbsp;&nbsp; {model_tag('vgg16')}",
         unsafe_allow_html=True,
@@ -740,7 +781,7 @@ def compare_benchmark():
 
 
 def page_about():
-    st.header("ℹ️ À propos")
+    page_head("Documentation", "À propos de ce projet")
     st.markdown(
         """
 ### Architecture
@@ -783,10 +824,13 @@ def get_descriptors():
 
 
 def page_descriptor_search():
-    st.header("🎨 Recherche par descripteurs (VP-Tree)")
-    st.caption("Descripteurs classiques (couleur, texture, forme), partition métrique de "
-               "l'espace des index par VP-Tree. L'utilisateur choisit un ou plusieurs "
-               "descripteurs et leurs poids.")
+    page_head(
+        "Descripteurs classiques",
+        "Choix du descripteur, choix de l'index",
+        "Couleur HSV, LBP, HOG — un ou plusieurs à la fois, avec des poids ajustables. "
+        "La recherche k-NN passe par un VP-Tree (partition métrique de l'espace des index) "
+        "ou, pour comparer, un scan linéaire exhaustif.",
+    )
 
     desc = get_descriptors()
     if not desc["available"]:
@@ -842,9 +886,13 @@ def page_descriptor_search():
 
 
 def page_combined_search():
-    st.header("🔗 Requête combinée (texte ET/OU image)")
-    st.caption("Fusion rang-réciproque entre la recherche textuelle (Elasticsearch) et "
-               "la recherche visuelle (descripteurs + VP-Tree).")
+    page_head(
+        "Multi-modal",
+        "Requête combinée",
+        "Mots-clés et/ou image dans la même requête. Les deux listes de résultats "
+        "sont fusionnées par rang-réciproque — robuste aux échelles différentes "
+        "entre BM25 et distance L1.",
+    )
 
     desc = get_descriptors()
     c1, c2 = st.columns([3, 2])
@@ -949,9 +997,12 @@ def mirflickr_stats():
 
 
 def page_mirflickr():
-    st.header("🌐 MIRFLICKR-1M (MPEG-7)")
-    st.caption("Base de 1 million d'images Flickr avec descripteurs MPEG-7 "
-               "pré-calculés (Edge Histogram, Homogeneous Texture).")
+    page_head(
+        "Benchmark 1M",
+        "MIRFLICKR-1M",
+        "Un million d'images Flickr livrées avec deux descripteurs MPEG-7 pré-calculés : "
+        "Edge Histogram (150 dims) et Homogeneous Texture (43 dims).",
+    )
 
     s = mirflickr_stats()
     c1, c2, c3 = st.columns(3)
